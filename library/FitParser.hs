@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module FitParser where
 
 import Data.Binary.Get -- binary parser combinators
@@ -6,7 +8,7 @@ import Data.Word       -- unsigned ints
 import Data.Int        -- signed ints
 import Data.Maybe
 import qualified Data.ByteString.Lazy as BL
-import Control.Monad (liftM)
+import Control.Monad (liftM, replicateM, void, unless)
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.Trans.Class
@@ -25,74 +27,66 @@ fitP = liftA3 Fit fitHeaderP messagesP crcP
 parseSize :: FitHeader -> Size
 parseSize (FitHdr hdrSize _ msgSize _) = hdrSize + msgSize
 
-fitHeaderG :: Get FitHeader
-fitHeaderG = do
-  hdrSize <- liftM fromIntegral getWord8
-  version <- liftM fromIntegral getWord8
-  _       <- getWord16le
-  msgSize <- liftM fromIntegral getWord32le
-  _       <- count 4 getWord8
+fitHeaderP :: Parser FitHeader
+fitHeaderP = do
+  hdrSize <- num8P
+  version <- num8P  
+  _       <- num16P LittleEndian
+  msgSize <- num32P LittleEndian
+  _       <- modify $ setSize (hdrSize + msgSize)
+  _       <- dotFITP
   crc     <- if hdrSize > 12 
-               then crcG >>= return . Just 
+               then liftM Just crcP
                else return Nothing
   return $ FitHdr hdrSize version msgSize crc
 
-fitHeaderP :: Parser FitHeader
-fitHeaderP = do
-  hdr <- lift . lift $ fitHeaderG
-  _   <- modify $ setSize (parseSize hdr)
-  return hdr
-
-crcG :: Get CRC
-crcG = getWord16le
+dotFITP :: Parser ()
+dotFITP = do
+  cs <- replicateM 4 word8P
+  unless (BL.pack cs == ".FIT") $ lift $ throwE DotFIT
 
 crcP :: Parser CRC
-crcP = lift . lift $ crcG
-
-definitionG :: LocalMsgNum -> Get Definition
-definitionG lMsg = do
-  _         <- reserved
-  arch      <- archG
-  gMsg      <- globalMsgNumG arch
-  numFields <- fieldSizeG
-  defs      <- count numFields fieldDefG
-  return $ Defn lMsg arch gMsg defs
+crcP = do 
+  crc1 <- word16P LittleEndian
+  crc2 <- liftM crc get
+  if crc2 == 0
+    then return crc1
+    else lift $ throwE (CRCFail crc2)
 
 definitionP :: LocalMsgNum -> Parser Definition
 definitionP lMsg = do
-  def       <- lift . lift $ definitionG lMsg
+  _         <- reservedP
+  arch      <- archP
+  gMsg      <- globalMsgNumP arch
+  numFields <- num8P
+  defs      <- replicateM numFields fieldDefP
+  let def = Defn lMsg arch gMsg defs
   _         <- modify $ addDef lMsg def
   return def
 
-msgHeaderG :: Get Header
-msgHeaderG = getWord8 >>= return . makeHeader
-
 msgHeaderP :: Parser Header
-msgHeaderP = lift . lift $ msgHeaderG
+msgHeaderP = liftM makeHeader word8P
 
-archG :: Get Arch
-archG = do
-  byte <- getWord8
+archP :: Parser Arch
+archP = do
+  byte <- word8P
   if testBit byte 0
     then return BigEndian
     else return LittleEndian
 
-fieldDefG :: Get FieldDefinition
-fieldDefG = liftA3 FieldDef getWord8 fieldSizeG baseTypeG
+fieldDefP :: Parser FieldDefinition
+fieldDefP = liftA3 FieldDef word8P num8P baseTypeP
 
-fieldSizeG :: Get Int
-fieldSizeG = getWord8 >>= return . fromIntegral
-
-baseTypeG :: Get Word8
-baseTypeG = do
-    n <- getWord8 
+baseTypeP :: Parser Word8
+baseTypeP = do
+    n <- word8P 
     return $ 0xF .&. n
 
-reserved :: Get ()
-reserved = skip 1
+reservedP :: Parser ()
+reservedP = void word8P
 
-globalMsgNumG :: Arch -> Get Word16
-globalMsgNumG = getWord16
+globalMsgNumP :: Arch -> Parser Word16
+globalMsgNumP = word16P
 
 dataP :: Header -> Parser Data
 dataP hdr = do
@@ -115,25 +109,25 @@ dataP hdr = do
          return $ Data lMsg gMsg (Just ts') fields
 
 fieldP :: Arch -> GlobalMsgNum -> M.Map FieldNumber Modification -> FieldDefinition -> Parser Profile
-fieldP arch gMsg profileMap fDef = lift $ case fDef of
-  FieldDef fNum _    0  -> liftM Enum    (lift getWord8)              >>= mkFieldE fNum
-  FieldDef fNum _    1  -> liftM SInt8   (lift getInt8)               >>= mkFieldE fNum 
-  FieldDef fNum _    2  -> liftM UInt8   (lift getWord8)              >>= mkFieldE fNum 
-  FieldDef fNum _    3  -> liftM SInt16  (lift $ getInt16 arch)       >>= mkFieldE fNum 
-  FieldDef fNum _    4  -> liftM UInt16  (lift $ getWord16 arch)      >>= mkFieldE fNum 
-  FieldDef fNum _    5  -> liftM SInt32  (lift $ getInt32 arch)       >>= mkFieldE fNum 
-  FieldDef fNum _    6  -> liftM UInt32  (lift $ getWord32 arch)      >>= mkFieldE fNum 
-  FieldDef fNum size 7  -> liftM String  (lift $ count size getWord8) >>= mkFieldE fNum 
-  FieldDef fNum _    8  -> liftM Float32 (lift $ getNum32 arch)       >>= mkFieldE fNum 
-  FieldDef fNum _    9  -> liftM Float64 (lift $ getNum64 arch)       >>= mkFieldE fNum 
-  FieldDef fNum _    10 -> liftM UInt8z  (lift getWord8)              >>= mkFieldE fNum 
-  FieldDef fNum _    11 -> liftM UInt16z (lift $ getWord16 arch)      >>= mkFieldE fNum 
-  FieldDef fNum _    12 -> liftM UInt32z (lift $ getWord32 arch)      >>= mkFieldE fNum 
-  FieldDef fNum size 13 -> liftM Byte    (lift $ count size getWord8) >>= mkFieldE fNum 
-  FieldDef _    _    bt -> throwE (InvalidBasetype bt)
+fieldP arch gMsg profileMap fDef = case fDef of
+  FieldDef fNum _    0  -> liftM Enum    word8P                   >>= mkFieldE fNum
+  FieldDef fNum _    1  -> liftM SInt8   num8P                    >>= mkFieldE fNum 
+  FieldDef fNum _    2  -> liftM UInt8   word8P                   >>= mkFieldE fNum 
+  FieldDef fNum _    3  -> liftM SInt16  (num16P arch)            >>= mkFieldE fNum 
+  FieldDef fNum _    4  -> liftM UInt16  (word16P arch)           >>= mkFieldE fNum 
+  FieldDef fNum _    5  -> liftM SInt32  (num32P arch)            >>= mkFieldE fNum 
+  FieldDef fNum _    6  -> liftM UInt32  (word32P arch)           >>= mkFieldE fNum 
+  FieldDef fNum size 7  -> liftM String  (replicateM size word8P) >>= mkFieldE fNum 
+  FieldDef fNum _    8  -> liftM Float32 (num32P arch)            >>= mkFieldE fNum 
+  FieldDef fNum _    9  -> liftM Float64 (num64P arch)            >>= mkFieldE fNum 
+  FieldDef fNum _    10 -> liftM UInt8z  word8P                   >>= mkFieldE fNum 
+  FieldDef fNum _    11 -> liftM UInt16z (word16P arch)           >>= mkFieldE fNum 
+  FieldDef fNum _    12 -> liftM UInt32z (word32P arch)           >>= mkFieldE fNum 
+  FieldDef fNum size 13 -> liftM Byte    (replicateM size word8P) >>= mkFieldE fNum 
+  FieldDef _    _    bt -> lift $ throwE (InvalidBasetype bt)
 
   where
-    mkFieldE fNum bt = do
+    mkFieldE fNum bt = lift $ do
       modification <- maybe (return $ const (Just NoProfile)) return (M.lookup fNum profileMap) -- should throw nofieldnum error
       maybe (throwE $ TypeMismatch gMsg fNum bt) return (modification bt)
 
@@ -158,54 +152,59 @@ messagesP = do
       msg  <- messageP
       msgs <- messagesP
       return $ msg : msgs
-    else do
-      return []
+    else return []
 
 runFitParser :: Filename -> IO (Either ParseError Fit)
 runFitParser fname = do
   bytestring <- BL.readFile fname
-  return $ runGet (runExceptT $ evalStateT fitP (ParseState 12 M.empty Nothing)) bytestring
+  return $ runGet (runExceptT $ evalStateT fitP (ParseState 12 M.empty Nothing 0)) bytestring
 
-runMsgParser :: Filename -> IO (Either ParseError Message)
-runMsgParser fname = do
-  bytestring <- BL.readFile fname
-  return $ runGet (runExceptT $ evalStateT (fitHeaderP >> messageP >> messageP >> messageP) (ParseState 12 M.empty Nothing)) bytestring
+{-runMsgParser :: Filename -> IO (Either ParseError Message)-}
+{-runMsgParser fname = do-}
+  {-bytestring <- BL.readFile fname-}
+  {-return $ runGet (runExceptT $ evalStateT (fitHeaderP >> messageP >> messageP >> messageP) (ParseState 12 M.empty Nothing)) bytestring-}
 
 type Filename = String
 
-getInt8 :: Get Int8
-getInt8 = liftM fromIntegral getWord8
+combine :: Bits a => Int -> Arch -> a -> a -> a
+combine offset arch w1 w2 = case arch of
+  BigEndian -> (w1 `shiftL` offset) `xor` w2
+  _         -> (w2 `shiftL` offset) `xor` w1
 
-getInt16 :: Arch -> Get Int16
-getInt16 arch = liftM fromIntegral (getWord16 arch)
+word8P :: Parser Word8
+word8P = do
+  w    <- lift . lift $ getWord8
+  crc1 <- liftM crc get
+  modify $ setCRC (checkByte crc1 w)
+  return w
 
-getInt32 :: Arch -> Get Int32
-getInt32 arch = liftM fromIntegral (getWord32 arch)
+word16P :: Arch -> Parser Word16
+word16P arch = do
+  w1 <- num8P 
+  w2 <- num8P
+  return $ combine 8 arch w1 w2
 
-getWord16 :: Arch -> Get Word16
-getWord16 BigEndian = getWord16be
-getWord16 _         = getWord16le
+word32P :: Arch -> Parser Word32
+word32P arch = do
+  w1 <- num16P arch
+  w2 <- num16P arch
+  return $ combine 16 arch w1 w2
 
-getWord32 :: Arch -> Get Word32
-getWord32 BigEndian = getWord32be
-getWord32 _         = getWord32le
 
-getWord64 :: Arch -> Get Word64
-getWord64 BigEndian = getWord64be
-getWord64 _         = getWord64le
+word64P :: Arch -> Parser Word64
+word64P arch = do
+  w1 <- num32P arch
+  w2 <- num32P arch
+  return $ combine 32 arch w1 w2
 
-getNum8 :: Num a => Get a
-getNum8 = liftM fromIntegral getWord8
+num8P :: Num a => Parser a
+num8P = liftM fromIntegral word8P
 
-getNum16 :: Num a => Arch -> Get a
-getNum16 arch = liftM fromIntegral (getWord16 arch)
+num16P :: Num a => Arch -> Parser a
+num16P = liftM fromIntegral . word16P 
 
-getNum32 :: Num a => Arch -> Get a
-getNum32 arch = liftM fromIntegral (getWord32 arch)
+num32P :: Num a => Arch -> Parser a
+num32P = liftM fromIntegral . word32P 
 
-getNum64 :: Num a => Arch -> Get a
-getNum64 arch = liftM fromIntegral (getWord64 arch)
-
-count :: Int -> Get a -> Get [a]
-count n = sequence . take n . repeat
-
+num64P :: Num a => Arch -> Parser a
+num64P = liftM fromIntegral . word64P 

@@ -184,6 +184,157 @@ garminProductMap = M.fromAscList
     (1632, Garmin)
   ]
 
+{-data FileCreator = SofwareVersion  Word16-}
+                 {-| HardwareVersion Word8-}
+                 {-deriving Show-}
+
+{-data TimestampCorrelation = TCTimestamp               DateTime-}
+                          {-| FractionalTimestamp       Word16-}
+                          {-| SystemTimestamp           DateTime-}
+                          {-| FractionalSystemTimestamp Word16-}
+                          {-| TCLocalTimestamp          LocalDateTime-}
+                          {-| TimestampMs               Word16-}
+                          {-| SystemTimestampMs         Word16-}
+                          {-deriving Show-}
+
+{-data Activity = ActivityTimestamp DateTime-}
+              {-| ActivityTotalTimerTime    Word32-}
+              {-| NumSessions       Word16-}
+              {-| ActivityType      Activity-}
+              {-| Event             Event-}
+              {-| EventType         EventType-}
+              {-| LocalTimestamp    LocalDateTime-}
+              {-| ActivityEventGroup Word8-}
+              {-deriving Show-}
+
+{-data Session = MessageIndex      MessageIndex-}
+             {-| SessionTimestamp  DateTime-}
+             {-| SessionEvent      Event-}
+             {-| SessionEventType  EventType-}
+             {-| StartTime         DateTime-}
+             {-| StartPositionLat  Int32-}
+             {-| StartPositionLong Int32-}
+             {-| SessionSport      Sport-}
+             {-| SubSport          SubSport-}
+             {-| TotalElapsedTime  Float-}
+             {-| SessionTotalTimerTime    Float-}
+             {-| TotalDistance     Float-}
+             {-| TotalCycles       Word32-}
+             {-| TotalStrides      Word32-}
+             {-| TotalCalories     Word16-}
+             {-| TotalFatCalories  Word16-}
+             {-| AvgSpeed          Float-}
+             {-| MaxSpeed          Float-}
+             {-| AvgHeartRate      Word8-}
+             {-| MaxHeartRate      Word8-}
+             {-| AvgCadence        Word8-}
+             {-| AvgRunningCadence Word8-}
+             {-| MaxCadence        Word8-}
+             {-| MaxRunningCadence Word8-}
+             {-| AvgPower          Word16-}
+             {-| MaxPower          Word16-}
+             {-| TotalAscent       Word16-}
+             {-| TotalDescent      Word16-}
+             {-| TotalTrainingEffect Float-}
+             {-| FirstLapIndex     Word16-}
+             {-| NumLaps           Word16-}
+             {-| SessionEventGroup Word8-}
+             {-| Trigger           SessionTrigger-}
+             {-| NecLat            Int32-}
+             {-| NecLong           Int32-}
+             {-| SwcLat            Int32-}
+             {-| SwcLong           Int32-}
+             {-| NormalizedPower   Word16-}
+             {-| TrainingStressScore Float-}
+             {-| IntensityFactor   Float-}
+             {-| NoSession-}
+             {-[>| LeftRightBalance  <]-}
+             {-[>| AvgStrokeCount<]-}
+             {-[>| AvgStrokeDistance<]-}
+             {-[>| SwimStroke<]-}
+             {-[>| PoolLength<]-}
+             {-[>| ThresholdPower<]-}
+             {-[>| PoolLengthUnit<]-}
+             {-[>| NumActiveLengths<]-}
+             {-[>| TotalWork<]-}
+             {-[>| AvgAltitude<]-}
+             {-[>| MaxAltitude<]-}
+             {-[>| GpsAccuracy<]-}
+             {-[>| AvgGrade<]-}
+             {-[>| AvgPosGrade<]-}
+             {-[>| AvgNegGrade<]-}
+             {-[>| MaxPosGrade<]-}
+             {-[>| MaxNegGrade<]-}
+             {-[>| AvgTemperature<]-}
+             {-[>| MaxTemperature<]-}
+             {-[>| TotalMovingTime<]-}
+             {-[>| AvgPosVerticalSpeed<]-}
+             {-[>| AvgNegVerticalSpeed<]-}
+             {-[>| MaxPosVerticalSpeed<]-}
+             {-[>| MaxNegVerticalSpeed<]-}
+             {-[>| MinHeartRate<]-}
+             {-[>| TimeInHrZone<]-}
+             {-[>| TimeInSpeedZone<]-}
+             {-[>| TimeInCadenceZone<]-}
+             {-[>| TimeInPowerZone<]-}
+             {-[>| AvgLapTime<]-}
+             {-[>| BestLapIndex<]-}
+             {-[>| MinAltitude<]-}
+             {-[>| PlayerScore<]-}
+             {-[>| OpponentScore<]-}
+             {-[>| OpponentName<]-}
+             {-[>| StrokeCount<]-}
+             {-[>| ZoneCount<]-}
+             {-[>| MaxBallSpeed<]-}
+             {-[>| AvgBallSpeed<]-}
+             {-[>| AvgVerticalOscillation<]-}
+             {-[>| AvgStanceTimePercent<]-}
+             {-[>| AvgStanceTime<]-}
+             {-[>| AvgFractionalCadence<]-}
+             {-[>| MaxFractionalCadence<]-}
+             {-[>| TotalFractionalCycles<]-}
+             {-[>| AvgTotalHemoglobinConc<]-}
+             {-[>| MinTotalHemoglobinConc<]-}
+             {-[>| MaxTotalHemoglobinConc<]-}
+             {-[>| AvgSaturatedHemoglobinPercent<]-}
+             {-[>| MinSaturatedHemoglobinPercent<]-}
+             {-[>| MaxSaturatedHemoglobinPercent<]-}
+             {-[>| AvgLeftTorqueEffectiveness<]-}
+             {-[>| AvgRightTorqueEffectiveness<]-}
+             {-[>| AvgLeftPedalSmoothness<]-}
+             {-[>| AvgRightPedalSmoothness<]-}
+             {-[>| AvgCombinedPedalSmoothness<]-}
+             {-[>| SportIndex<]-}
+             {-[>| TimeStanding<]-}
+             {-[>| StandCount<]-}
+             {-[>| AvgLeftPco<]-}
+             {-[>| AvgRightPco<]-}
+             {-[>| AvgLeftPowerPhase<]-}
+             {-[>| AvgLeftPowerPhasePeak<]-}
+             {-[>| AvgRightPowerPhase<]-}
+             {-[>| AvgRightPowerPhasePeak<]-}
+             {-[>| AvgPowerPosition<]-}
+             {-[>| MaxPowerPosition<]-}
+             {-[>| AvgCadencePosition<]-}
+             {-[>| MaxCadencePosition<]-}
+             {-[>| EnhancedAvgSpeed<]-}
+             {-[>| EnhancedMaxSpeed<]-}
+             {-[>| EnhancedAvgAltitude<]-}
+             {-[>| EnhancedMinAltitude<]-}
+             {-[>| EnhancedMaxAltitude<]-}
+             {-[>| AvgLevMotorPower<]-}
+             {-[>| MaxLevMotorPower<]-}
+             {-[>| LevBatteryConsumption<]-}
+             {-deriving Show-}
+
+{-data Lap = LapTimestamp DateTime-}
+         {-| NoLap-}
+         {-deriving Show-}
+
+{-data Length = LengthTimestamp DateTime-}
+            {-| NoLength-}
+            {-deriving Show-}
+
 data Record = Timestamp DateTime
             | PositionLat Int32
             | PositionLong Int32
@@ -194,6 +345,7 @@ data Record = Timestamp DateTime
             | Speed Float
             | Power Word16
             | CompressedSpeedDistance Float Float
+            | Grade Float
             | NoRecord
             deriving Show
 
@@ -257,3 +409,41 @@ recordProfile = M.fromAscList
     , (82,  const (Just $ ProfileRecord NoRecord))
     , (253, fmap (ProfileRecord . Timestamp . DateTime) . unUInt32)
     ]
+
+{-data Event = EventTimestamp DateTime-}
+           {-| NoEvent-}
+           {-deriving Show-}
+
+{-data DeviceInfo = DeviceTimestamp DateTime-}
+                {-| NoDeviceInfo-}
+                {-deriving Show-}
+
+{-data TrainingFile = TrainingFileTimestamp DateTime-}
+                  {-| NoTrainingFile-}
+                  {-deriving Show-}
+
+{-newtype HRV = HRVTime Float-}
+
+{-data CameraEvent = CameraEventTimestamp   DateTime-}
+                 {-| CameraEventTimestampMs Word16-}
+                 {-| CameraEventType        CameraEventType-}
+                 {-| CameraFileUUID         String-}
+                 {-| CameraOrientation      CameraOrientationType-}
+                 {-deriving Show-}
+
+{-data GyroscopeData = GyroscopeDataTimestamp DateTime-}
+                   {-| NoGyroscopeData-}
+                   {-deriving Show-}
+
+{-data AccelerometerData = AccelerometerDataTimestamp DateTime-}
+                       {-| NoAccelerometerData-}
+                       {-deriving Show-}
+
+{-data ThreeDSensorCalibration = ThreeDSensorCalibrationTimestamp DSensorateTime-}
+                             {-| NoThreeDSensorCalibration-}
+                             {-deriving Show-}
+
+{-data ObdiiData = ObdiiDataTimestamp DateTime-}
+               {-| NoObdiiData-}
+               {-deriving Show-}
+
