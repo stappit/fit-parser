@@ -8,7 +8,7 @@ import Data.Word       -- unsigned ints
 import Data.Int        -- signed ints
 import Data.Maybe
 import qualified Data.ByteString.Lazy as BL
-import Control.Monad (liftM, replicateM, void, unless)
+import Control.Monad (liftM, liftM2, replicateM, void, unless)
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.Trans.Class
@@ -179,23 +179,13 @@ word8P = do
   return w
 
 word16P :: Arch -> Parser Word16
-word16P arch = do
-  w1 <- num8P 
-  w2 <- num8P
-  return $ combine 8 arch w1 w2
+word16P arch = liftM2 (combine 8 arch) num8P num8P
 
 word32P :: Arch -> Parser Word32
-word32P arch = do
-  w1 <- num16P arch
-  w2 <- num16P arch
-  return $ combine 16 arch w1 w2
-
+word32P arch = liftM2 (combine 16 arch) (num16P arch) (num16P arch)
 
 word64P :: Arch -> Parser Word64
-word64P arch = do
-  w1 <- num32P arch
-  w2 <- num32P arch
-  return $ combine 32 arch w1 w2
+word64P arch = liftM2 (combine 32 arch) (num32P arch) (num32P arch)
 
 num8P :: Num a => Parser a
 num8P = liftM fromIntegral word8P
