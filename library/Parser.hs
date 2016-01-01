@@ -1,10 +1,14 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Parser where
 
 import Data.Int
 import Data.Word 
 import Data.Binary.Get -- binary parser combinators
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.State.Lazy
+import Control.Applicative (Applicative)
+import Control.Monad.Except
+import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class ()
 
 import qualified Data.Map as M
@@ -14,7 +18,14 @@ import Fit
 import BaseType
 import CRC
 
-type Parser a = StateT ParseState (ExceptT ParseError Get) a
+newtype Parser a = Parser {runParser :: StateT ParseState (ExceptT ParseError Get) a}
+                 deriving (Functor, Applicative, Monad, MonadError ParseError, MonadState ParseState)
+
+liftGet :: Get a -> Parser a
+liftGet = Parser . lift . lift
+  
+bytesConsumed :: Parser Int64
+bytesConsumed = liftGet bytesRead
 
 data ParseError = CRCFail CRC
                 | NoDefFound Int64 LocalMsgNum

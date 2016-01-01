@@ -9,8 +9,8 @@ import Data.Int        -- signed ints
 import Data.Maybe
 import qualified Data.ByteString.Lazy as BL
 import Control.Monad (liftM, liftM2, replicateM, void, unless)
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.State.Lazy
+import Control.Monad.Except
+import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class
 
 import Control.Applicative (liftA3)
@@ -43,7 +43,7 @@ fitHeaderP = do
 dotFITP :: Parser ()
 dotFITP = do
   cs <- replicateM 4 word8P
-  unless (BL.pack cs == ".FIT") $ lift $ throwE DotFIT
+  unless (BL.pack cs == ".FIT") $ throwError DotFIT
 
 crcP :: Parser CRC
 crcP = do 
@@ -51,7 +51,7 @@ crcP = do
   crc2 <- liftM crc get
   if crc2 == 0
     then return crc1
-    else lift $ throwE (CRCFail crc2)
+    else throwError (CRCFail crc2)
 
 definitionP :: LocalMsgNum -> Parser Definition
 definitionP lMsg = do
@@ -91,21 +91,21 @@ globalMsgNumP = word16P
 dataP :: Header -> Parser Data
 dataP hdr = do
    defs <- liftM definitions get
-   consumed <- lift . lift $ bytesRead
+   consumed <- liftGet bytesRead
    case hdr of
-     DefnH _ -> lift $ throwE WrongMsgType
+     DefnH _ -> throwError WrongMsgType
      DataH lMsg -> do
          let mDef = M.lookup lMsg defs
-         gMsg   <- lift $ maybe (throwE $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
-         fields <- maybe (lift . throwE $ NoDefFound consumed lMsg) fieldsP mDef 
+         gMsg   <- maybe (throwError $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
+         fields <- maybe (throwError $ NoDefFound consumed lMsg) fieldsP mDef 
          return $ Data lMsg gMsg Nothing fields
      CompH lMsg offset -> do
          ts <- liftM timestamp get
          let mDef = M.lookup lMsg defs
              ts' = addOffset offset (fromMaybe 0 ts)
          _  <- modify $ setTimestamp ts'
-         gMsg   <- lift $ maybe (throwE $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
-         fields <- maybe (lift . throwE $ NoDefFound consumed lMsg) fieldsP mDef 
+         gMsg   <- maybe (throwError $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
+         fields <- maybe (throwError $ NoDefFound consumed lMsg) fieldsP mDef 
          return $ Data lMsg gMsg (Just ts') fields
 
 fieldP :: Arch -> GlobalMsgNum -> M.Map FieldNumber Modification -> FieldDefinition -> Parser Profile
@@ -124,16 +124,16 @@ fieldP arch gMsg profileMap fDef = case fDef of
   FieldDef fNum _    11 -> liftM UInt16z (word16P arch)           >>= mkFieldE fNum 
   FieldDef fNum _    12 -> liftM UInt32z (word32P arch)           >>= mkFieldE fNum 
   FieldDef fNum size 13 -> liftM Byte    (replicateM size word8P) >>= mkFieldE fNum 
-  FieldDef _    _    bt -> lift $ throwE (InvalidBasetype bt)
+  FieldDef _    _    bt -> throwError (InvalidBasetype bt)
 
   where
-    mkFieldE fNum bt = lift $ do
+    mkFieldE fNum bt = do
       modification <- maybe (return $ const (Just NoProfile)) return (M.lookup fNum profileMap) -- should throw nofieldnum error
-      maybe (throwE $ TypeMismatch gMsg fNum bt) return (modification bt)
+      maybe (throwError $ TypeMismatch gMsg fNum bt) return (modification bt)
 
 fieldsP :: Definition -> Parser [Profile]
 fieldsP (Defn _ arch gMsg defs) = do
-  profile <- lift $ maybe (return M.empty) return (M.lookup gMsg profiles) -- should throw noglobmsg error
+  profile <- maybe (return M.empty) return (M.lookup gMsg profiles) -- should throw noglobmsg error
   mapM (fieldP arch gMsg profile) defs
 
 messageP :: Parser Message
@@ -146,7 +146,7 @@ messageP = do
 messagesP :: Parser [Message]
 messagesP = do
   size <- liftM size get
-  consumed  <- lift . lift $ bytesRead
+  consumed  <- liftGet bytesRead
   if size > consumed
     then do
       msg  <- messageP
@@ -157,7 +157,7 @@ messagesP = do
 runFitParser :: Filename -> IO (Either ParseError Fit)
 runFitParser fname = do
   bytestring <- BL.readFile fname
-  return $ runGet (runExceptT $ evalStateT fitP (ParseState 12 M.empty Nothing 0)) bytestring
+  return $ runGet (runExceptT $ evalStateT (runParser fitP) (ParseState 12 M.empty Nothing 0)) bytestring
 
 {-runMsgParser :: Filename -> IO (Either ParseError Message)-}
 {-runMsgParser fname = do-}
@@ -173,7 +173,7 @@ combine offset arch w1 w2 = case arch of
 
 word8P :: Parser Word8
 word8P = do
-  w    <- lift . lift $ getWord8
+  w    <- liftGet getWord8
   crc1 <- liftM crc get
   modify $ setCRC (checkByte crc1 w)
   return w
