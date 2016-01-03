@@ -21,6 +21,8 @@ import CRC
 import BaseType
 import Parser
 
+import qualified Profiles as P
+
 fitP :: Parser Fit
 fitP = liftA3 Fit fitHeaderP messagesP crcP
 
@@ -51,7 +53,7 @@ crcP = do
   crc2 <- liftM crc get
   if crc2 == 0
     then return crc1
-    else throwError (CRCFail crc2)
+    else throwError $ CRCFail crc2
 
 definitionP :: LocalMsgNum -> Parser Definition
 definitionP lMsg = do
@@ -108,7 +110,7 @@ dataP hdr = do
          fields <- maybe (throwError $ NoDefFound consumed lMsg) fieldsP mDef 
          return $ Data lMsg gMsg (Just ts') fields
 
-fieldP :: Arch -> GlobalMsgNum -> M.Map FieldNumber Modification -> FieldDefinition -> Parser Profile
+fieldP :: Arch -> GlobalMsgNum -> M.Map FieldNumber Modification -> FieldDefinition -> Parser P.Profile
 fieldP arch gMsg profileMap fDef = case fDef of
   FieldDef fNum _    0  -> liftM Enum    word8P                   >>= mkFieldE fNum
   FieldDef fNum _    1  -> liftM SInt8   num8P                    >>= mkFieldE fNum 
@@ -128,10 +130,10 @@ fieldP arch gMsg profileMap fDef = case fDef of
 
   where
     mkFieldE fNum bt = do
-      modification <- maybe (return $ const (Just NoProfile)) return (M.lookup fNum profileMap) -- should throw nofieldnum error
+      modification <- maybe (return $ const (Just P.NoProfile)) return (M.lookup fNum profileMap) -- should throw nofieldnum error
       maybe (throwError $ TypeMismatch gMsg fNum bt) return (modification bt)
 
-fieldsP :: Definition -> Parser [Profile]
+fieldsP :: Definition -> Parser [P.Profile]
 fieldsP (Defn _ arch gMsg defs) = do
   profile <- maybe (return M.empty) return (M.lookup gMsg profiles) -- should throw noglobmsg error
   mapM (fieldP arch gMsg profile) defs
