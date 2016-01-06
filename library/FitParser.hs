@@ -20,6 +20,7 @@ import Fit
 import CRC
 import BaseType
 import Parser
+import Timestamp
 
 import qualified Profiles as P
 
@@ -33,7 +34,7 @@ fitHeaderP :: Parser FitHeader
 fitHeaderP = do
   hdrSize <- num8P
   version <- num8P  
-  _       <- num16P LittleEndian
+  _       <- word16P LittleEndian
   msgSize <- num32P LittleEndian
   _       <- modify $ setSize (hdrSize + msgSize)
   _       <- dotFITP
@@ -97,39 +98,38 @@ dataP hdr = do
    case hdr of
      DefnH _ -> throwError WrongMsgType
      DataH lMsg -> do
-         let mDef = M.lookup lMsg defs
-         gMsg   <- maybe (throwError $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
-         fields <- maybe (throwError $ NoDefFound consumed lMsg) fieldsP mDef 
-         return $ Data lMsg gMsg Nothing fields
+         fields <- maybe (throwError $ NoDefFound lMsg) fieldsP (M.lookup lMsg defs) 
+         return $ Data lMsg Nothing fields
      CompH lMsg offset -> do
-         ts <- liftM timestamp get
-         let mDef = M.lookup lMsg defs
-             ts' = addOffset offset (fromMaybe 0 ts)
-         _  <- modify $ setTimestamp ts'
-         gMsg   <- maybe (throwError $ NoDefFound consumed lMsg) (return . globalMsgNum) mDef
-         fields <- maybe (throwError $ NoDefFound consumed lMsg) fieldsP mDef 
-         return $ Data lMsg gMsg (Just ts') fields
+         ts     <- liftM timestamp get
+         ts'    <- maybe (throwError NoTimestampFound) (return . addOffset offset) ts
+         _      <- modify $ setTimestamp ts'
+         fields <- maybe (throwError $ NoDefFound lMsg) fieldsP (M.lookup lMsg defs) 
+         return $ Data lMsg (Just ts') fields
 
 fieldP :: Arch -> GlobalMsgNum -> M.Map FieldNumber Modification -> FieldDefinition -> Parser P.Profile
 fieldP arch gMsg profileMap fDef = case fDef of
-  FieldDef fNum _    0  -> liftM Enum    word8P                   >>= mkFieldE fNum
-  FieldDef fNum _    1  -> liftM SInt8   num8P                    >>= mkFieldE fNum 
-  FieldDef fNum _    2  -> liftM UInt8   word8P                   >>= mkFieldE fNum 
-  FieldDef fNum _    3  -> liftM SInt16  (num16P arch)            >>= mkFieldE fNum 
-  FieldDef fNum _    4  -> liftM UInt16  (word16P arch)           >>= mkFieldE fNum 
-  FieldDef fNum _    5  -> liftM SInt32  (num32P arch)            >>= mkFieldE fNum 
-  FieldDef fNum _    6  -> liftM UInt32  (word32P arch)           >>= mkFieldE fNum 
-  FieldDef fNum size 7  -> liftM String  (replicateM size word8P) >>= mkFieldE fNum 
-  FieldDef fNum _    8  -> liftM Float32 (num32P arch)            >>= mkFieldE fNum 
-  FieldDef fNum _    9  -> liftM Float64 (num64P arch)            >>= mkFieldE fNum 
-  FieldDef fNum _    10 -> liftM UInt8z  word8P                   >>= mkFieldE fNum 
-  FieldDef fNum _    11 -> liftM UInt16z (word16P arch)           >>= mkFieldE fNum 
-  FieldDef fNum _    12 -> liftM UInt32z (word32P arch)           >>= mkFieldE fNum 
-  FieldDef fNum size 13 -> liftM Byte    (replicateM size word8P) >>= mkFieldE fNum 
+  FieldDef fNum _    0  -> liftM Enum    word8P                   >>= mkField fNum
+  FieldDef fNum _    1  -> liftM SInt8   num8P                    >>= mkField fNum 
+  FieldDef fNum _    2  -> liftM UInt8   word8P                   >>= mkField fNum 
+  FieldDef fNum _    3  -> liftM SInt16  (num16P arch)            >>= mkField fNum 
+  FieldDef fNum _    4  -> liftM UInt16  (word16P arch)           >>= mkField fNum 
+  FieldDef fNum _    5  -> liftM SInt32  (num32P arch)            >>= mkField fNum 
+  FieldDef fNum _    6  -> do
+                             w  <- word32P arch
+                             _  <- when (fNum == 253) $ modify $ setTimestamp $ Timestamp w
+                             mkField fNum $ UInt32 w
+  FieldDef fNum size 7  -> liftM String  (replicateM size word8P) >>= mkField fNum 
+  FieldDef fNum _    8  -> liftM Float32 (num32P arch)            >>= mkField fNum 
+  FieldDef fNum _    9  -> liftM Float64 (num64P arch)            >>= mkField fNum 
+  FieldDef fNum _    10 -> liftM UInt8z  word8P                   >>= mkField fNum 
+  FieldDef fNum _    11 -> liftM UInt16z (word16P arch)           >>= mkField fNum 
+  FieldDef fNum _    12 -> liftM UInt32z (word32P arch)           >>= mkField fNum 
+  FieldDef fNum size 13 -> liftM Byte    (replicateM size word8P) >>= mkField fNum 
   FieldDef _    _    bt -> throwError (InvalidBasetype bt)
 
   where
-    mkFieldE fNum bt = do
+    mkField fNum bt = do
       modification <- maybe (return $ const (Just P.NoProfile)) return (M.lookup fNum profileMap) -- should throw nofieldnum error
       maybe (throwError $ TypeMismatch gMsg fNum bt) return (modification bt)
 

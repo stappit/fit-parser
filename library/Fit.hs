@@ -56,7 +56,7 @@ data Arch = BigEndian | LittleEndian
 data FieldDefinition = FieldDef FieldNumber FieldSize BaseType
                      deriving Show
 
-data Data = Data LocalMsgNum GlobalMsgNum (Maybe Timestamp) [Profile]
+data Data = Data LocalMsgNum (Maybe Timestamp) [Profile]
           deriving Show
 
 data Field = Field String BaseTypeValue

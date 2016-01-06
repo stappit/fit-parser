@@ -25,6 +25,7 @@ library
                      , Parser
                      , Timestamp
                      , Types
+                     , Profiles
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8

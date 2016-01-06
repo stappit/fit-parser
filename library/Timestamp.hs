@@ -1,8 +1,12 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Timestamp where
 
 import Data.Word
+import Data.Bits 
 
-type Timestamp = Int
+newtype Timestamp = Timestamp Word32
+  deriving (Show, Num, Eq, Ord, Bits)
 
 newtype DateTime = 
     DateTime Word32

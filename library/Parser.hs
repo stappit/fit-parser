@@ -5,6 +5,7 @@ module Parser where
 
 import Data.Int
 import Data.Word 
+import Data.Bits 
 import Data.Binary.Get -- binary parser combinators
 import Control.Applicative (Applicative)
 import Control.Monad.Except
@@ -28,11 +29,12 @@ bytesConsumed :: Parser Int64
 bytesConsumed = liftGet bytesRead
 
 data ParseError = CRCFail CRC
-                | NoDefFound Int64 LocalMsgNum
+                | NoDefFound LocalMsgNum
                 | WrongMsgType
                 | InvalidBasetype BaseType
                 | InvalidFieldNum GlobalMsgNum FieldNumber
                 | NoGlobalMsgFound GlobalMsgNum FieldNumber
+                | NoTimestampFound
                 | TypeMismatch GlobalMsgNum FieldNumber BaseTypeValue
                 | DotFIT
                 deriving Show
@@ -54,7 +56,14 @@ setSize :: Size -> ParseState -> ParseState
 setSize sz (ParseState _ defs ts crc) = ParseState sz defs ts crc
 
 addOffset :: Offset -> Timestamp -> Timestamp
-addOffset _ = id -- TODO
+addOffset offset ts = (ts .&. tsMask) + offset' + rollover
+  where
+    tsMask   = Timestamp 0xFFFFFFE0
+    roMask   = Timestamp 0x0000001F
+    offset'  = Timestamp (fromIntegral offset)
+    rollover = if offset' >= ts .&. roMask 
+                 then 0 
+                 else 0x20
 
 setCRC :: CRC -> ParseState -> ParseState
 setCRC crc (ParseState sz defs ts _) = ParseState sz defs ts crc
