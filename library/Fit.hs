@@ -12,7 +12,7 @@ import Profiles
 data Fit = Fit FitHeader [Message] CRC
   deriving Show
 
-data FitHeader = FitHdr HeaderSize Version MessageSize (Maybe CRC)
+data FitHeader = FitHdr HeaderSize ProtocollVersion ProfileVersion MessageSize (Maybe CRC)
   deriving Show
 
 data Message = 
@@ -60,7 +60,8 @@ data Field = Field String BaseTypeValue
 type Size        = Int64
 type HeaderSize  = Int64
 type MessageSize = Int64
-type Version = Word8
+type ProtocollVersion = Word8
+type ProfileVersion   = Word16
 
 type GlobalMsgNum = Word16
 

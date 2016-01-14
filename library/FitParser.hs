@@ -21,21 +21,18 @@ import WordParsers
 fitP :: Parser Fit
 fitP = liftA3 Fit fitHeaderP messagesP crcP
 
-parseSize :: FitHeader -> Size
-parseSize (FitHdr hdrSize _ msgSize _) = hdrSize + msgSize
-
 fitHeaderP :: Parser FitHeader
 fitHeaderP = do
   hdrSize <- num8P
-  version <- num8P  
-  _       <- word16P LittleEndian
+  ptkV    <- num8P  
+  pfV     <- word16P LittleEndian
   msgSize <- num32P LittleEndian
   _       <- modify $ setSize (hdrSize + msgSize)
   _       <- dotFITP
   crc     <- if hdrSize > 12 
                then liftM Just crcP
                else return Nothing
-  return $ FitHdr hdrSize version msgSize crc
+  return $ FitHdr hdrSize ptkV pfV msgSize crc
 
 dotFITP :: Parser ()
 dotFITP = do
