@@ -63,6 +63,10 @@ unString :: BaseTypeValue -> Maybe [Word8]
 unString (String val) = Just val
 unString _            = Nothing
 
+unByte :: BaseTypeValue -> Maybe [Word8]
+unByte (Byte val) = Just val
+unByte _          = Nothing
+
 invalidEnum    :: BaseTypeValue
 invalidEnum    = Enum    0 
 

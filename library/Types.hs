@@ -1,6 +1,7 @@
 module Types where
 
 import Data.Word
+import Enum
 
 import qualified Data.Map as M
 
@@ -24,6 +25,50 @@ data File = Device
           | MfgRangeMin
           | MfgRangeMax
           deriving (Show)
+
+instance Enum' File where
+  fromEnum' file = case file of
+    Device            -> 1
+    Settings          -> 2
+    Sport             -> 3
+    Activity          -> 4
+    Workout           -> 5
+    Course            -> 6
+    Schedules         -> 7
+    Weight            -> 9
+    Totals            -> 10
+    Goals             -> 11
+    BloodPressure     -> 14
+    MonitoringA       -> 15
+    ActivitySummary   -> 20
+    MonitoringDaily   -> 28
+    MonitoringB       -> 32
+    Segment           -> 34
+    SegmentList       -> 35
+    MfgRangeMin       -> 0xF7
+    MfgRangeMax       -> 0xFE
+
+  toEnum' n
+    | n == 1    = Just Device
+    | n == 2    = Just Settings       
+    | n == 3    = Just Sport          
+    | n == 4    = Just Activity       
+    | n == 5    = Just Workout        
+    | n == 6    = Just Course         
+    | n == 7    = Just Schedules      
+    | n == 9    = Just Weight         
+    | n == 10   = Just Totals         
+    | n == 11   = Just Goals          
+    | n == 14   = Just BloodPressure  
+    | n == 15   = Just MonitoringA    
+    | n == 20   = Just ActivitySummary
+    | n == 28   = Just MonitoringDaily
+    | n == 32   = Just MonitoringB    
+    | n == 34   = Just Segment        
+    | n == 35   = Just SegmentList    
+    | n == 0xF7 = Just MfgRangeMin    
+    | n == 0xFE = Just MfgRangeMax    
+    | otherwise = Nothing
 
 data MesgNum =
     FileIDNum
@@ -96,11 +141,25 @@ data Checksum =
   | Ok
   deriving (Show, Enum, Bounded)
 
+instance Enum' Checksum where
+  fromEnum' Clear = 0
+  fromEnum' Ok = 1
+  toEnum' 0 = Just $ toEnum 0
+  toEnum' 1 = Just $ toEnum 1
+  toEnum' n = Nothing
+
 data FileFlag =
     Read
   | Write
   | Erase
-  deriving (Show)
+  deriving (Show, Enum)
+
+instance Enum' FileFlag where
+  fromEnum' ff = 2^(1 + fromEnum ff)
+  toEnum' 2 = Just $ toEnum 2
+  toEnum' 4 = Just $ toEnum 4
+  toEnum' 8 = Just $ toEnum 8
+  toEnum' n = Nothing
 
 data MesgCount =
     NumPerFile
@@ -113,6 +172,13 @@ data MessageIndex =
   | Reserved
   | Mask
   deriving (Show)
+
+instance Enum' MessageIndex where
+  toEnum' 0x8000 = Just Selected
+  toEnum' 0x7000 = Just Reserved
+  toEnum' 0x0FFF = Just Mask
+  toEnum' _      = Nothing
+  fromEnum' = undefined
 
 newtype DeviceIndex = 
     Creator Word8
@@ -573,6 +639,47 @@ data Event =
   | EventCommTimeout
   deriving (Show)
 
+instance Enum' Event where
+  toEnum' n
+    | n == 0  = Just EventTimer
+    | n == 3  = Just EventWorkout
+    | n == 4  = Just EventWorkoutStep
+    | n == 5  = Just EventPowerDown
+    | n == 6  = Just EventPowerUp
+    | n == 7  = Just EventOffCourse
+    | n == 8  = Just EventSession
+    | n == 9  = Just EventLap
+    | n == 10 = Just EventCoursePoint
+    | n == 11 = Just EventBattery
+    | n == 12 = Just EventVirtualPartnerPace
+    | n == 13 = Just EventHRHighAlert
+    | n == 14 = Just EventHRLowAlert
+    | n == 15 = Just EventSpeedHighAlert
+    | n == 16 = Just EventSpeedLowAlert
+    | n == 17 = Just EventCadHighAlert
+    | n == 18 = Just EventCadLowAlert
+    | n == 19 = Just EventPowerHighAlert
+    | n == 20 = Just EventPowerLowAlert
+    | n == 21 = Just EventRecoveryHR
+    | n == 22 = Just EventBatteryLow
+    | n == 23 = Just EventTimeDurationAlert
+    | n == 24 = Just EventDistanceDurationAlert
+    | n == 25 = Just EventCalorieDurationAlert
+    | n == 26 = Just EventActivity
+    | n == 27 = Just EventFitnessEquipment
+    | n == 28 = Just EventLength
+    | n == 32 = Just EventUserMarker
+    | n == 33 = Just EventSportPoint
+    | n == 36 = Just EventCalibration
+    | n == 42 = Just EventFrontGearChange
+    | n == 43 = Just EventRearGearChange
+    | n == 44 = Just EventRiderPositionChange
+    | n == 45 = Just EventElevHighAlert
+    | n == 46 = Just EventElevLowAlert
+    | n == 47 = Just EventCommTimeout
+    | otherwise = Nothing
+  fromEnum' = undefined
+
 data EventType =
     Start
   | Stop
@@ -585,6 +692,21 @@ data EventType =
   | StopDisable
   | StopDisableAll
   deriving (Show, Enum, Bounded)
+
+instance Enum' EventType where
+  toEnum' n
+    | n == 0 = Just Start
+    | n == 1 = Just Stop
+    | n == 2 = Just ConsecutiveDepreciated
+    | n == 3 = Just Marker
+    | n == 4 = Just StopAll
+    | n == 5 = Just BeginDepreciated
+    | n == 6 = Just EndDepreciated
+    | n == 7 = Just EndAllDepreciated
+    | n == 8 = Just StopDisable
+    | n == 9 = Just StopDisableAll
+    | otherwise = Nothing
+  fromEnum' = undefined
 
 data TimeTrigger =
     TTManual
@@ -696,7 +818,8 @@ data CoursePoint =
   deriving (Show, Enum, Bounded)
 
 data Manufacturer =
-    Garmin
+    UnknownManufacturer
+  | Garmin
   | GarminFr405Antfs
   | Zephyr
   | Dayton
@@ -804,6 +927,123 @@ data Manufacturer =
   | Strava
   | Actigraphcorp
   deriving (Show)
+
+instance Enum' Manufacturer where
+  toEnum' n = M.lookup n manufacturerMap
+  fromEnum' = undefined
+
+manufacturerMap :: M.Map Word16 Manufacturer
+manufacturerMap = M.fromAscList
+  [
+    (0   , UnknownManufacturer)
+  , (1   , Garmin)
+  , (2   , GarminFr405Antfs)
+  , (3   , Zephyr)
+  , (4   , Dayton)
+  , (5   , Idt)
+  , (6   , Srm)
+  , (7   , Quarq)
+  , (8   , Ibike)
+  , (9   , Saris)
+  , (10  , SparkHk)
+  , (11  , Tanita)
+  , (12  , Echowell)
+  , (13  , DynastreamOem)
+  , (14  , Nautilus)
+  , (15  , Dynastream)
+  , (16  , Timex)
+  , (17  , Metrigear)
+  , (18  , Xelic)
+  , (19  , Beurer)
+  , (20  , Cardiosport)
+  , (21  , AAndD)
+  , (22  , Hmm)
+  , (23  , Suunto)
+  , (24  , ThitaElektronik)
+  , (25  , Gpulse)
+  , (26  , CleanMobile)
+  , (27  , PedalBrain)
+  , (28  , Peaksware)
+  , (29  , Saxonar)
+  , (30  , LemondFitness)
+  , (31  , Dexcom)
+  , (32  , WahooFitness)
+  , (33  , OctaneFitness)
+  , (34  , Archinoetics)
+  , (35  , TheHurtBox)
+  , (36  , CitizenSystems)
+  , (37  , Magellan)
+  , (38  , Osynce)
+  , (39  , Holux)
+  , (40  , Concept2)
+  , (42  , OneGiantLeap)
+  , (43  , AceSensor)
+  , (44  , BrimBrothers)
+  , (45  , Xplova)
+  , (46  , PerceptionDigital)
+  , (47  , Bf1systems)
+  , (48  , Pioneer)
+  , (49  , Spantec)
+  , (50  , Metalogics)
+  , (51  , Fouriiiis)
+  , (52  , SeikoEpson)
+  , (53  , SeikoEpsonOem)
+  , (54  , IforPowell)
+  , (55  , MaxwellGuider)
+  , (56  , StarTrac)
+  , (57  , Breakaway)
+  , (58  , AlatechTechnologyLtd)
+  , (59  , MioTechnologyEurope)
+  , (60  , Rotor)
+  , (61  , Geonaute)
+  , (62  , IdBike)
+  , (63  , Specialized)
+  , (64  , Wtek)
+  , (65  , PhysicalEnterprises)
+  , (66  , NorthPoleEngineering)
+  , (67  , Bkool)
+  , (68  , Cateye)
+  , (69  , StagesCycling)
+  , (70  , Sigmasport)
+  , (71  , Tomtom)
+  , (72  , Peripedal)
+  , (73  , Wattbike)
+  , (76  , Moxy)
+  , (77  , Ciclosport)
+  , (78  , Powerbahn)
+  , (79  , AcornProjectsAps)
+  , (80  , Lifebeam)
+  , (81  , Bontrager)
+  , (82  , Wellgo)
+  , (83  , Scosche)
+  , (84  , Magura)
+  , (85  , Woodway)
+  , (86  , Elite)
+  , (87  , NielsenKellerman)
+  , (88  , DkCity)
+  , (89  , Tacx)
+  , (90  , DirectionTechnology)
+  , (91  , Magtonic)
+  , (92  , Onepartcarbon)
+  , (93  , InsideRideTechnologies)
+  , (94  , SoundOfMotion)
+  , (95  , Stryd)
+  , (96  , Icg)
+  , (97  , MiPulse)
+  , (98  , BsxAthletics)
+  , (99  , Look)
+  , (255 , Development)
+  , (257 , Healthandlife)
+  , (258 , Lezyne)
+  , (259 , ScribeLabs)
+  , (260 , Zwift)
+  , (261 , Watteam)
+  , (262 , Recon)
+  , (263 , FaveroElectronics)
+  , (264 , Dynovelo)
+  , (265 , Strava)
+  , (5759, Actigraphcorp)
+  ]
 
 data GarminProduct =
     Hrm1
@@ -934,6 +1174,141 @@ data GarminProduct =
   | UnknownGarminProd -- to be removed
   deriving (Show)
 
+instance Enum' GarminProduct where
+  toEnum' n = M.lookup n garminProductMap
+  fromEnum' = undefined
+
+garminProductMap :: M.Map Word16 GarminProduct
+garminProductMap = M.fromAscList
+  [
+    (1    , Hrm1)
+  , (2    , Axh01)
+  , (3    , Axb01)
+  , (4    , Axb02)
+  , (5    , Hrm2ss)
+  , (6    , DsiAlf02)
+  , (7    , Hrm3ss)
+  , (8    , HrmRunSingleByteProductID)
+  , (9    , Bsm)
+  , (10   , Bcm)
+  , (11   , Axs01)
+  , (12   , HrmTriSingleByteProductID)
+  , (14   , Fr225SingleByteProductID)
+  , (473  , Fr301China)
+  , (474  , Fr301Japan)
+  , (475  , Fr301Korea)
+  , (494  , Fr301Taiwan)
+  , (717  , Fr405)
+  , (782  , Fr50)
+  , (987  , Fr405Japan)
+  , (988  , Fr60)
+  , (1011 , DsiAlf01)
+  , (1018 , Fr310xt)
+  , (1036 , Edge500)
+  , (1124 , Fr110)
+  , (1169 , Edge800)
+  , (1199 , Edge500Taiwan)
+  , (1213 , Edge500Japan)
+  , (1253 , Chirp)
+  , (1274 , Fr110Japan)
+  , (1325 , Edge200)
+  , (1328 , Fr910xt)
+  , (1333 , Edge800Taiwan)
+  , (1334 , Edge800Japan)
+  , (1341 , Alf04)
+  , (1345 , Fr610)
+  , (1360 , Fr210Japan)
+  , (1380 , VectorSs)
+  , (1381 , VectorCp)
+  , (1386 , Edge800China)
+  , (1387 , Edge500China)
+  , (1410 , Fr610Japan)
+  , (1422 , Edge500Korea)
+  , (1436 , Fr70)
+  , (1446 , Fr310xt4t)
+  , (1461 , Amx)
+  , (1482 , Fr10)
+  , (1497 , Edge800Korea)
+  , (1499 , Swim)
+  , (1537 , Fr910xtChina)
+  , (1551 , Fenix)
+  , (1555 , Edge200Taiwan)
+  , (1561 , Edge510)
+  , (1567 , Edge810)
+  , (1570 , Tempe)
+  , (1600 , Fr910xtJapan)
+  , (1623 , Fr620)
+  , (1632 , Fr220)
+  , (1664 , Fr910xtKorea)
+  , (1688 , Fr10Japan)
+  , (1721 , Edge810Japan)
+  , (1735 , VirbElite)
+  , (1736 , EdgeTouring)
+  , (1742 , Edge510Japan)
+  , (1743 , HrmTri)
+  , (1752 , HrmRun)
+  , (1765 , Fr920xt)
+  , (1821 , Edge510Asia)
+  , (1822 , Edge810China)
+  , (1823 , Edge810Taiwan)
+  , (1836 , Edge1000)
+  , (1837 , VivoFit)
+  , (1853 , VirbRemote)
+  , (1885 , VivoKi)
+  , (1903 , Fr15)
+  , (1907 , VivoActive)
+  , (1918 , Edge510Korea)
+  , (1928 , Fr620Japan)
+  , (1929 , Fr620China)
+  , (1930 , Fr220Japan)
+  , (1931 , Fr220China)
+  , (1936 , ApproachS6)
+  , (1956 , VivoSmart)
+  , (1967 , Fenix2)
+  , (1988 , Epix)
+  , (2050 , Fenix3)
+  , (2052 , Edge1000Taiwan)
+  , (2053 , Edge1000Japan)
+  , (2061 , Fr15Japan)
+  , (2067 , Edge520)
+  , (2070 , Edge1000China)
+  , (2072 , Fr620Russia)
+  , (2073 , Fr220Russia)
+  , (2079 , VectorS)
+  , (2100 , Edge1000Korea)
+  , (2130 , Fr920xtTaiwan)
+  , (2131 , Fr920xtChina)
+  , (2132 , Fr920xtJapan)
+  , (2134 , Virbx)
+  , (2135 , VivoSmartApac)
+  , (2140 , EtrexTouch)
+  , (2147 , Edge25)
+  , (2150 , VivoFit2)
+  , (2153 , Fr225)
+  , (2160 , VivoActiveApac)
+  , (2161 , Vector2)
+  , (2162 , Vector2s)
+  , (2172 , Virbxe)
+  , (2173 , Fr620Taiwan)
+  , (2174 , Fr220Taiwan)
+  , (2188 , Fenix3China)
+  , (2189 , Fenix3Twn)
+  , (2192 , VariaHeadlight)
+  , (2193 , VariaTaillightOld)
+  , (2219 , Fr225Asia)
+  , (2225 , VariaRadarTaillight)
+  , (2226 , VariaRadarDisplay)
+  , (2238 , Edge20)
+  , (2262 , D2Bravo)
+  , (2276 , VariaRemote)
+  , (10007, Sdm4)
+  , (10014, EdgeRemote)
+  , (20119, TrainingCenter)
+  , (65532, AndroidAntplusPlugin)
+  , (65534, Connect)
+  ]
+
+
 data AntplusDeviceType =
     AntfsADT
   | BikePowerADT
@@ -961,6 +1336,15 @@ data AntNetwork =
   | PrivateAN
   deriving (Show, Enum, Bounded)
 
+instance Enum' AntNetwork where
+  toEnum' n
+    | n == 0 = Just PublicAN
+    | n == 1 = Just AntplusAN
+    | n == 2 = Just AntfsAN
+    | n == 3 = Just PrivateAN
+    | otherwise = Nothing
+  fromEnum' = fromIntegral . fromEnum
+
 data WorkoutCapabilities =
     IntervalWC
   | CustomWC
@@ -986,6 +1370,17 @@ data BatteryStatus =
   | CriticalBS
   | UnknownBS
   deriving (Show)
+
+instance Enum' BatteryStatus where
+  toEnum' n
+    | n == 1 = Just NewBS
+    | n == 2 = Just GoodBS
+    | n == 3 = Just OkBS
+    | n == 4 = Just LowBS
+    | n == 5 = Just CriticalBS
+    | n == 7 = Just UnknownBS
+    | otherwise = Nothing
+  fromEnum' = undefined
 
 data HRType =
     Normal
@@ -1057,6 +1452,23 @@ data ActivityType =
   | AllActivities
   deriving (Show)
 
+{-activityTypeMap :: M.Map Word8 ActivityType-}
+activityTypeMap = M.fromAscList
+  [
+    (0,   GenericActivity)
+  , (1,   RunningActivity)
+  , (2,   CyclingActivity)
+  , (3,   TransitionActivity)
+  , (4,   FitnessEquipmentActivity)
+  , (5,   SwimmingActivity)
+  , (6,   WalkingActivity)
+  , (254, AllActivities)
+  ]
+
+instance Enum' ActivityType where
+  toEnum' n = M.lookup n activityTypeMap
+  fromEnum' = undefined
+
 data ActivitySubtype =
     GenericSubactivity
   | TreadmillSubactivity
@@ -1090,6 +1502,13 @@ data LeftRightBalance =
     LRBMask
   | LRBRight
   deriving (Show, Enum, Bounded)
+
+instance Enum' LeftRightBalance where
+  toEnum' 0 = Just LRBMask
+  toEnum' 1 = Just LRBRight
+  toEnum' _ = Nothing
+  fromEnum' LRBMask  = 0
+  fromEnum' LRBRight = 1
 
 data LeftRightBalance100 =
     LRBMask100
@@ -1126,6 +1545,21 @@ data StrokeType =
   | Backhand
   | Smash
   deriving (Show, Enum, Bounded)
+
+{-strokeTypeMap :: M.Map Word8 StrokeType-}
+strokeTypeMap = M.fromAscList
+  [
+    (0, NoEvent)
+  , (1, OtherStrokeType)
+  , (2, Serve)
+  , (3, Forehand)
+  , (4, Backhand)
+  , (5, Smash)
+  ]
+
+instance Enum' StrokeType where
+  toEnum' n = M.lookup n strokeTypeMap
+  fromEnum' = undefined
 
 data BodyLocation =
     LeftLeg
@@ -1166,6 +1600,12 @@ data BodyLocation =
   | Throat
   deriving (Show, Enum, Bounded)
 
+instance Enum' BodyLocation where
+  toEnum' n 
+    | n >= minBound && n <= maxBound = Just . toEnum . fromIntegral $ n
+    | otherwise                      = Nothing
+  fromEnum' = fromIntegral . fromEnum
+
 data SegmentLapStatus =
     End
   | Fail
@@ -1204,6 +1644,17 @@ data SourceType =
   | Wifi
   | Local
   deriving (Show, Enum, Bounded)
+
+instance Enum' SourceType where
+  toEnum' n
+    | n == 0 = Just Ant
+    | n == 1 = Just Antplus
+    | n == 2 = Just Bluetooth
+    | n == 3 = Just BluetoothLowEnergy
+    | n == 4 = Just Wifi
+    | n == 5 = Just Local
+    | otherwise = Nothing
+  fromEnum' = fromIntegral . fromEnum
 
 data RiderPositionType =
     Seated

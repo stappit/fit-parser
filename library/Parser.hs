@@ -20,7 +20,7 @@ import BaseType
 import CRC
 
 newtype Parser a = Parser {runParser :: StateT ParseState (ExceptT ParseError Get) a}
-                 deriving (Functor, Applicative, Monad, MonadError ParseError, MonadState ParseState)
+  deriving (Functor, Applicative, Monad, MonadError ParseError, MonadState ParseState)
 
 liftGet :: Get a -> Parser a
 liftGet = Parser . lift . lift
@@ -36,24 +36,26 @@ data ParseError = CRCFail CRC
                 | NoGlobalMsgFound GlobalMsgNum FieldNumber
                 | NoTimestampFound
                 | TypeMismatch GlobalMsgNum FieldNumber BaseTypeValue
+                | NoEnum Word16
                 | DotFIT
                 deriving Show
 
 data ParseState = ParseState {
-  size        :: Size,
-  definitions :: M.Map LocalMsgNum Definition,
-  timestamp   :: Maybe Timestamp,
-  crc         :: CRC
+  size         :: Size,
+  definitions  :: M.Map LocalMsgNum DefinitionMessage,
+  timestamp    :: Maybe Timestamp,
+  crc          :: CRC,
+  globalMsgNum :: GlobalMsgNum
 }
 
-addDef :: LocalMsgNum -> Definition -> ParseState -> ParseState
-addDef lMsg def (ParseState sz defs ts crc) = ParseState sz (M.insert lMsg def defs) ts crc
+addDef :: LocalMsgNum -> DefinitionMessage -> ParseState -> ParseState
+addDef lMsg def (ParseState sz defs ts crc gMsg) = ParseState sz (M.insert lMsg def defs) ts crc gMsg
 
 setTimestamp :: Timestamp -> ParseState -> ParseState
-setTimestamp ts (ParseState sz defs _ crc) = ParseState sz defs (Just ts) crc
+setTimestamp ts (ParseState sz defs _ crc gMsg) = ParseState sz defs (Just ts) crc gMsg
 
 setSize :: Size -> ParseState -> ParseState
-setSize sz (ParseState _ defs ts crc) = ParseState sz defs ts crc
+setSize sz (ParseState _ defs ts crc gMsg) = ParseState sz defs ts crc gMsg
 
 addOffset :: Offset -> Timestamp -> Timestamp
 addOffset offset ts = (ts .&. tsMask) + offset' + rollover
@@ -66,4 +68,7 @@ addOffset offset ts = (ts .&. tsMask) + offset' + rollover
                  else 0x20
 
 setCRC :: CRC -> ParseState -> ParseState
-setCRC crc (ParseState sz defs ts _) = ParseState sz defs ts crc
+setCRC crc (ParseState sz defs ts _ gMsg) = ParseState sz defs ts crc gMsg
+
+setGlobalMsgNum :: GlobalMsgNum -> ParseState -> ParseState
+setGlobalMsgNum gMsg (ParseState sz defs ts crc _) = ParseState sz defs ts crc gMsg

@@ -3,79 +3,89 @@ module Profiles where
 import Data.Word
 import Data.Int
 
+import BaseType
 import Timestamp
 
 import qualified Types as T
 
-data Profile = FileIDProfile      FileID
-             | FileCreatorProfile FileCreator
-             | TimestampCorrelationProfile TimestampCorrelation
-             | SoftwareProfile Software
-             | SlaveDeviceProfile SlaveDevice
-             | CapabilitiesProfile Capabilities
-             | FileCapabilitiesProfile FileCapabilities
-             | MesgCapabilitiesProfile MesgCapabilities
-             | FieldCapabilitiesProfile FieldCapabilities
-             | ActivityProfile Activity
-             | SessionProfile Session
-             | LapProfile Lap
-             | LengthProfile Length
-             | RecProfile Record
-             | EventProfile Event
-             | DeviceInfoProfile DeviceInfo
-             | TrainingFileProfile TrainingFile
-             | HRVProfile HRV
-             | CameraEventProfile CameraEvent
-             | GyroscopeDataProfile GyroscopeData
-             | AccelerometerDataProfile AccelerometerData
-             | ThreeDSensorCalibrationProfile ThreeDSensorCalibration
-             | VideoFrameProfile VideoFrame
-             | ObdiiDataProfile ObdiiData
-             | NmeaSentenceProfile NmeaSentence
-             | AviationAttitudeProfile AviationAttitude
-             | VideoProfile Video
-             | VideoTitleProfile VideoTitle
-             | VideoDescriptionProfile VideoDescription
-             | VideoClipProfile VideoClip
-             | CourseProfile Course
-             | CoursePointProfile CoursePoint
-             | SegmentIDProfile SegmentID
-             | SegmentLeaderboardEntryProfile SegmentLeaderboardEntry
-             | SegmentPointProfile SegmentPoint
-             | SegmentLapProfile SegmentLap
-             | SegmentFileProfile SegmentFile
-             | WorkoutProfile Workout
-             | WorkoutStepProfile WorkoutStep
-             | ScheduleProfile Schedule
-             | TotalsProfile Totals
-             | WeightScaleProfile WeightScale
-             | BloodPressureProfile BloodPressure
-             | MonitoringInfoProfile MonitoringInfo
-             | MonitoringProfile Monitoring
-             | MemoGlobProfile MemoGlob
-             | NoProfile
-             deriving (Show)
+data Profile = 
+    FileIDProfile                  [FileID]
+  | FileCreatorProfile             [FileCreator]
+  | TimestampCorrelationProfile    [TimestampCorrelation]
+  | SoftwareProfile                [Software]
+  | SlaveDeviceProfile             [SlaveDevice]
+  | CapabilitiesProfile            [Capabilities]
+  | FileCapabilitiesProfile        [FileCapabilities]
+  | MesgCapabilitiesProfile        [MesgCapabilities]
+  | FieldCapabilitiesProfile       [FieldCapabilities]
+  | ActivityProfile                [Activity]
+  | SessionProfile                 [Session]
+  | LapProfile                     [Lap]
+  | LengthProfile                  [Length]
+  | RecProfile                     [Record]
+  | EventProfile                   [Event]
+  | DeviceInfoProfile              [DeviceInfo]
+  | TrainingFileProfile            [TrainingFile]
+  | HRVProfile                     [HRV]
+  | CameraEventProfile             [CameraEvent]
+  | GyroscopeDataProfile           [GyroscopeData]
+  | AccelerometerDataProfile       [AccelerometerData]
+  | ThreeDSensorCalibrationProfile [ThreeDSensorCalibration]
+  | VideoFrameProfile              [VideoFrame]
+  | ObdiiDataProfile               [ObdiiData]
+  | NmeaSentenceProfile            [NmeaSentence]
+  | AviationAttitudeProfile        [AviationAttitude]
+  | VideoProfile                   [Video]
+  | VideoTitleProfile              [VideoTitle]
+  | VideoDescriptionProfile        [VideoDescription]
+  | VideoClipProfile               [VideoClip]
+  | CourseProfile                  [Course]
+  | CoursePointProfile             [CoursePoint]
+  | SegmentIDProfile               [SegmentID]
+  | SegmentLeaderboardEntryProfile [SegmentLeaderboardEntry]
+  | SegmentPointProfile            [SegmentPoint]
+  | SegmentLapProfile              [SegmentLap]
+  | SegmentFileProfile             [SegmentFile]
+  | WorkoutProfile                 [Workout]
+  | WorkoutStepProfile             [WorkoutStep]
+  | ScheduleProfile                [Schedule]
+  | TotalsProfile                  [Totals]
+  | WeightScaleProfile             [WeightScale]
+  | BloodPressureProfile           [BloodPressure]
+  | MonitoringInfoProfile          [MonitoringInfo]
+  | MonitoringProfile              [Monitoring]
+  | MemoGlobProfile                [MemoGlob]
+  | NoProfile
+  deriving (Show)
 
-data FileID = Type         T.File
-            | Manufacturer T.Manufacturer
-            | Product      T.GarminProduct
-            | Serial       Word32
-            | TimeCreated  DateTime
-            | Number       Word16
-            | ProductName  [Word8]
-            deriving Show
+data FileID = 
+    Type          T.File
+  | Manufacturer  T.Manufacturer
+  | Product       Word16 -- ProductSubfield 
+  | Serial        Word32
+  | TimeCreated   DateTime
+  | Number        Word16
+  | ProductName   String
+  | NoFileID     
+  | NoFileID'     Word8 BaseTypeValue
+  deriving (Show)
+
+data ProductSubfield =
+    GarminProduct T.GarminProduct
+  | Product'      Word16
+  deriving (Show)
 
 data FileCreator = 
-    SoftwareVersion Word16
-  | HardwareVersion Word8
+    SoftwareVersion    Word16
+  | HardwareVersion    Word8
   deriving (Show)
 
 data TimestampCorrelation = 
-    TCTimestamp               DateTime
+    TCTimestamp                 DateTime
   | TCFractionalTimestamp       Word16
   | TCSystemTimestamp           DateTime
   | TCFractionalSystemTimestamp Word16
-  | TCLocalTimestamp          LocalDateTime
+  | TCLocalTimestamp            LocalDateTime
   | TCTimestampMs               Word16
   | TCSystemTimestampMs         Word16
   deriving (Show)
@@ -88,7 +98,12 @@ data Software =
 
 data SlaveDevice =
     SDManufacturer T.Manufacturer
-  | SDProduct T.GarminProduct
+  | SDProduct      Word16 -- SDProductSubfield 
+  deriving (Show)
+
+data SDProductSubfield =
+    SDGarminProduct T.GarminProduct
+  | SDProduct'      Word16
   deriving (Show)
 
 data Capabilities =
@@ -112,7 +127,14 @@ data MesgCapabilities =
   | MesgCapabilitiesFile  T.File
   | MesgCapabilitiesNum   T.MesgNum
   | CountType             T.MesgCount
-  | Count                 Word16
+  | Count                 Word16 -- CountSubfield
+  deriving (Show)
+
+data CountSubfield =
+    NumPerFile     Word16
+  | MaxPerFile     Word16
+  | MaxPerFileType Word16
+  | Count'         Word16
   deriving (Show)
 
 data FieldCapabilities =
@@ -124,14 +146,14 @@ data FieldCapabilities =
   deriving (Show)
 
 data Activity = 
-    ActivityTimestamp DateTime
+    ActivityTimestamp      DateTime
   | ActivityTotalTimerTime Word32
-  | ActivityNumSessions       Word16
-  | ActivityType      T.Activity
-  | ActivityEvent             T.Event
-  | ActivityEventType         T.EventType
-  | ActivityLocalTimestamp    LocalDateTime
-  | ActivityEventGroup Word8
+  | ActivityNumSessions    Word16
+  | ActivityType           T.Activity
+  | ActivityEvent          T.Event
+  | ActivityEventType      T.EventType
+  | ActivityLocalTimestamp LocalDateTime
+  | ActivityEventGroup     Word8
   deriving (Show)
 
 data Session = 
@@ -147,18 +169,15 @@ data Session =
   | SessionTotalElapsedTime  Float
   | SessionTotalTimerTime Float
   | SessionTotalDistance     Float
-  | SessionTotalCycles       Word32
-  | SessionTotalStrides      Word32
+  | SessionTotalCycles       Word32 -- STotalCyclesSubfield
   | SessionTotalCalories     Word16
   | SessionTotalFatCalories  Word16
   | SessionAvgSpeed          Float
   | SessionMaxSpeed          Float
   | SessionAvgHeartRate      Word8
   | SessionMaxHeartRate      Word8
-  | SessionAvgCadence        Word8
-  | SessionAvgRunningCadence Word8
-  | SessionMaxCadence        Word8
-  | SessionMaxRunningCadence Word8
+  | SessionAvgCadence        Word8 -- SAvgCadenceSubfield
+  | SessionMaxCadence        Word8 -- SMaxCadenceSubfield
   | SessionAvgPower          Word16
   | SessionMaxPower          Word16
   | SessionTotalAscent       Word16
@@ -254,112 +273,141 @@ data Session =
   | SessionLevBatteryConsumption Float
   deriving (Show)
 
+data STotalCyclesSubfield =
+    TotalStrides  Word32
+  | STotalCycles' Word32
+  deriving (Show)
+
+data SAvgCadenceSubfield =
+    SAvgRunningCadence Word8
+  | SAvgCadence'       Word8
+  deriving (Show)
+
+data SMaxCadenceSubfield =
+    SMaxRunningCadence Word8
+  | SMaxCadence'       Word8
+  deriving (Show)
+
 data Lap = 
-    LapMessageIndex      T.MessageIndex
-  | LapTimestamp         DateTime
-  | LapEvent             T.Event
-  | LapEventType         T.EventType
-  | LapStartTime         DateTime
-  | LapStartPositionLat  Int32
-  | LapStartPositionLong Int32
-  | LapEndPositionLat    Int32
-  | LapEndPositionLong   Int32
-  | LapTotalElapsedTime  Float
-  | LapTotalTimerTime    Float
-  | LapTotalDistance     Float
-  | LapTotalCycles       Word32
-  {-| LapTotalStrides      Word32-}
-  | LapTotalCalories     Word16
-  | LapTotalFatCalories  Word16
-  | LapAvgSpeed          Float
-  | LapMaxSpeed          Float
-  | LapAvgHeartRate      Word8
-  | LapMaxHeartRate      Word8
-  | LapAvgCadence        Word8
-  | LapAvgRunningCadence Word8
-  | LapMaxCadence        Word8
-  | LapMaxRunningCadence Word8
-  | LapAvgPower          Word16
-  | LapMaxPower          Word16
-  | LapTotalAscent       Word16
-  | LapTotalDescent      Word16
-  | LapIntensity         T.Intensity
-  | LapLapTrigger        T.LapTrigger
-  | LapSport             T.Sport
-  | LapEventGroup        Word8
-  | LapNumLengths        Word16
-  | LapNormalizedPower   Word16
-  | LapLeftRightBalance  T.LeftRightBalance100
-  | LapFirstLengthIndex  Word16
-  | LapAvgStrokeDistance Word16
-  | LapSwimStroke        T.SwimStroke
-  | LapSubSport          T.SubSport
-  | LapNumActiveLengths  Word16
-  | LapTotalWork         Word32
-  | LapAvgAltitude       Float
-  | LapMaxAltitude       Float
-  | LapGpsAccuracy       Word8
-  | LapAvgGrade          Float
-  | LapAvgPosGrade       Float
-  | LapAvgNegGrade       Float
-  | LapMaxPosGrade       Float
-  | LapMaxNegGrade       Float
-  | LapAvgTemperature    Int8
-  | LapMaxTemperature    Int8
-  | LapTotalMovingTime   Float
-  | LapAvgPosVerticalSpeed Float
-  | LapAvgNegVerticalSpeed Float
-  | LapMaxPosVerticalSpeed Float
-  | LapMaxNegVerticalSpeed Float
-  | LapTimeInHRZone      Float
-  | LapTimeInSpeedZone   Float
-  | LapTimeInCadenceZone Float
-  | LapTimeInPowerZone   Float
-  | LapRepetitionNum     Word16
-  | LapMinAltitude       Float
-  | LapMinHeartRate      Word8
-  | LapWktStepIndex      T.MessageIndex
-  | LapOpponentScore     Word16
-  | LapStrokeCount       Word16
-  | LapZoneCount         Word16
-  | LapAvgVerticalOscillation Float
-  | LapAvgStanceTimePercent   Float
-  | LapAvgStanceTime     Float
-  | LapAvgFractionalCadence Float
-  | LapMaxFractionalCadence Float
-  | LapTotalFractionalCycles Float
-  | LapPlayerScore       Float
-  | LapAvgTotalHemoglobinConc Float
-  | LapMinTotalHemoglobinConc Float
-  | LapMaxTotalHemoglobinConc Float
+    LapMessageIndex                  T.MessageIndex
+  | LapTimestamp                     DateTime
+  | LapEvent                         T.Event
+  | LapEventType                     T.EventType
+  | LapStartTime                     DateTime
+  | LapStartPositionLat              Int32
+  | LapStartPositionLong             Int32
+  | LapEndPositionLat                Int32
+  | LapEndPositionLong               Int32
+  | LapTotalElapsedTime              Float
+  | LapTotalTimerTime                Float
+  | LapTotalDistance                 Float
+  | LapTotalCycles                   Word32 -- LapTotalCyclesSubfield
+  | LapTotalCalories                 Word16
+  | LapTotalFatCalories              Word16
+  | LapAvgSpeed                      Float
+  | LapMaxSpeed                      Float
+  | LapAvgHeartRate                  Word8
+  | LapMaxHeartRate                  Word8
+  | LapAvgCadence                    Word8 -- LapAvgCadenceSubfield
+  | LapMaxCadence                    Word8 -- LapAvgCadenceSubfield
+  | LapAvgPower                      Word16
+  | LapMaxPower                      Word16
+  | LapTotalAscent                   Word16
+  | LapTotalDescent                  Word16
+  | LapIntensity                     T.Intensity
+  | LapLapTrigger                    T.LapTrigger
+  | LapSport                         T.Sport
+  | LapEventGroup                    Word8
+  | LapNumLengths                    Word16
+  | LapNormalizedPower               Word16
+  | LapLeftRightBalance              T.LeftRightBalance100
+  | LapFirstLengthIndex              Word16
+  | LapAvgStrokeDistance             Float
+  | LapSwimStroke                    T.SwimStroke
+  | LapSubSport                      T.SubSport
+  | LapNumActiveLengths              Word16
+  | LapTotalWork                     Word32
+  | LapAvgAltitude                   Float
+  | LapMaxAltitude                   Float
+  | LapGpsAccuracy                   Word8
+  | LapAvgGrade                      Float
+  | LapAvgPosGrade                   Float
+  | LapAvgNegGrade                   Float
+  | LapMaxPosGrade                   Float
+  | LapMaxNegGrade                   Float
+  | LapAvgTemperature                Int8
+  | LapMaxTemperature                Int8
+  | LapTotalMovingTime               Float
+  | LapAvgPosVerticalSpeed           Float
+  | LapAvgNegVerticalSpeed           Float
+  | LapMaxPosVerticalSpeed           Float
+  | LapMaxNegVerticalSpeed           Float
+  | LapTimeInHRZone                  Float
+  | LapTimeInSpeedZone               Float
+  | LapTimeInCadenceZone             Float
+  | LapTimeInPowerZone               Float
+  | LapRepetitionNum                 Word16
+  | LapMinAltitude                   Float
+  | LapMinHeartRate                  Word8
+  | LapWktStepIndex                  T.MessageIndex
+  | LapOpponentScore                 Word16
+  | LapStrokeCount                   Word16
+  | LapZoneCount                     Word16
+  | LapAvgVerticalOscillation        Float
+  | LapAvgStanceTimePercent          Float
+  | LapAvgStanceTime                 Float
+  | LapAvgFractionalCadence          Float
+  | LapMaxFractionalCadence          Float
+  | LapTotalFractionalCycles         Float
+  | LapPlayerScore                   Word16
+  | LapAvgTotalHemoglobinConc        Float
+  | LapMinTotalHemoglobinConc        Float
+  | LapMaxTotalHemoglobinConc        Float
   | LapAvgSaturatedHemoglobinPercent Float
   | LapMinSaturatedHemoglobinPercent Float
   | LapMaxSaturatedHemoglobinPercent Float
-  | LapAvgLeftTorqueEffectiveness  Float
-  | LapAvgRightTorqueEffectiveness Float
-  | LapAvgLeftPedalSmoothness  Float
-  | LapAvgRightPedalSmoothness Float
-  | LapAvgCombinedPedalSmoothness Float
-  | LapTimeStanding Float
-  | LapStandCount   Word16
-  | LapAvgLeftPco          Int8
-  | LapAvgRightPco         Int8
-  | LapAvgLeftPowerPhase      Float
-  | LapAvgLeftPowerPhasePeak  Float
-  | LapAvgRightPowerPhase     Float
-  | LapAvgRightPowerPhasePeak Float
-  | LapAvgPowerPosition    Word16
-  | LapMaxPowerPosition    Word16
-  | LapAvgCadencePosition  Word8
-  | LapMaxCadencePosition  Word8
-  | LapEnhancedAvgSpeed    Float
-  | LapEnhancedMaxSpeed    Float
-  | LapEnhancedAvgAltitude Float
-  | LapEnhancedMinAltitude Float
-  | LapEnhancedMaxAltitude Float
-  | LapAvgLevMotorPower    Word16
-  | LapMaxLevMotorPower    Word16
-  | LapLevBatteryConsumption Float
+  | LapAvgLeftTorqueEffectiveness    Float
+  | LapAvgRightTorqueEffectiveness   Float
+  | LapAvgLeftPedalSmoothness        Float
+  | LapAvgRightPedalSmoothness       Float
+  | LapAvgCombinedPedalSmoothness    Float
+  | LapTimeStanding                  Float
+  | LapStandCount                    Word16
+  | LapAvgLeftPco                    Int8
+  | LapAvgRightPco                   Int8
+  | LapAvgLeftPowerPhase             Float
+  | LapAvgLeftPowerPhasePeak         Float
+  | LapAvgRightPowerPhase            Float
+  | LapAvgRightPowerPhasePeak        Float
+  | LapAvgPowerPosition              Word16
+  | LapMaxPowerPosition              Word16
+  | LapAvgCadencePosition            Word8
+  | LapMaxCadencePosition            Word8
+  | LapEnhancedAvgSpeed              Float
+  | LapEnhancedMaxSpeed              Float
+  | LapEnhancedAvgAltitude           Float
+  | LapEnhancedMinAltitude           Float
+  | LapEnhancedMaxAltitude           Float
+  | LapAvgLevMotorPower              Word16
+  | LapMaxLevMotorPower              Word16
+  | LapLevBatteryConsumption         Float
+  | NoLap    
+  | NoLap'     Word8 BaseTypeValue
+  deriving (Show)
+
+data LapTotalCyclesSubfield =
+    LapTotalStrides Word32
+  | LapTotalCycles' Word32
+  deriving (Show)
+
+data LapAvgCadenceSubfield =
+    LapAvgRunningCadence Word8
+  | LapAvgCadence'       Word8
+  deriving (Show)
+
+data LapMaxCadenceSubfield =
+    LapMaxRunningCadence Word8
+  | LapMaxCadence'       Word8
   deriving (Show)
 
 data Length = 
@@ -414,33 +462,34 @@ data Record =
   | RecActivityType            T.ActivityType
   | RecLeftTorqueEffectiveness  Float
   | RecRightTorqueEffectiveness Float
-  | RecLeftPedalSmoothness     Float
-  | RecRightPedalSmoothness    Float
-  | RecCombinedPedalSmoothness Float
-  | RecTime128                 Float
-  | RecStrokeType              T.StrokeType
-  | RecZone                    Word8
-  | RecBallSpeed               Float
-  | RecCadence256              Float
-  | RecFractionalCadence       Float
-  | RecTotalHemoglobinConc     Float
-  | RecTotalHemoglobinConcMin  Float
-  | RecTotalHemoglobinConcMax  Float
+  | RecLeftPedalSmoothness           Float
+  | RecRightPedalSmoothness          Float
+  | RecCombinedPedalSmoothness       Float
+  | RecTime128                       Float
+  | RecStrokeType                    T.StrokeType
+  | RecZone                          Word8
+  | RecBallSpeed                     Float
+  | RecCadence256                    Float
+  | RecFractionalCadence             Float
+  | RecTotalHemoglobinConc           Float
+  | RecTotalHemoglobinConcMin        Float
+  | RecTotalHemoglobinConcMax        Float
   | RecSaturatedHemoglobinPercent    Float
   | RecSaturatedHemoglobinPercentMin Float
   | RecSaturatedHemoglobinPercentMax Float
-  | RecDeviceIndex             T.DeviceIndex
-  | RecLeftPco                 Int8
-  | RecRightPco                Int8
-  | RecLeftPowerPhase          Float
-  | RecLeftPowerPhasePeak      Float
-  | RecRightPowerPhase         Float
-  | RecRightPowerPhasePeak     Float
-  | RecEnhancedSpeed           Float
-  | RecEnhancedAltitude        Float
-  | RecBatterySoc              Float
-  | RecMotorPower              Word16
-  | NoRecord -- to be removed
+  | RecDeviceIndex                   T.DeviceIndex
+  | RecLeftPco                       Int8
+  | RecRightPco                      Int8
+  | RecLeftPowerPhase                Float
+  | RecLeftPowerPhasePeak            Float
+  | RecRightPowerPhase               Float
+  | RecRightPowerPhasePeak           Float
+  | RecEnhancedSpeed                 Float
+  | RecEnhancedAltitude              Float
+  | RecBatterySoc                    Float
+  | RecMotorPower                    Word16
+  | NoRecord     
+  | NoRecord'     Word8 BaseTypeValue
   deriving (Show)
 
 data Event = 
@@ -448,7 +497,7 @@ data Event =
   | Event                 T.Event
   | EventType             T.EventType
   | Data16                Word16
-  | Data                  DataSubfield
+  | Data                  Word32 -- DataSubfield
   | EventGroup            Word8
   | Score                 Word16 
   | OpponentScore         Word16
@@ -457,6 +506,8 @@ data Event =
   | RearGearNum           Word8
   | RearGear              Word8
   | DeviceIndex           T.DeviceIndex
+  | NoEvent     
+  | NoEvent'     Word8 BaseTypeValue
   deriving (Show)
 
 data DataSubfield =
@@ -480,16 +531,16 @@ data DataSubfield =
   | GearChangeData        Word8 Word8 Word8 Word8
   | RiderPosition         T.RiderPositionType
   | CommTimeout           T.CommTimeoutType
+  | Data'                 Word32
   deriving (Show)
 
 data DeviceInfo =
-    DITimestamp DateTime
+    DITimestamp           DateTime
   | DIDeviceIndex         T.DeviceIndex
-  | DIDeviceType          DeviceTypeSubfield
+  | DIDeviceType          Word8 -- DeviceTypeSubfield
   | DIManufacturer        T.Manufacturer
   | DISerialNumber        Word32
-  | DIProduct             T.GarminProduct
-  | DIGarminProduct       T.GarminProduct
+  | DIProduct             Word16 -- DIProductSubfield
   | DISoftwareVersion     Float
   | DIHardwareVersion     Word8
   | DICumOperatingTime    Word32
@@ -502,32 +553,45 @@ data DeviceInfo =
   | DIAntNetwork          T.AntNetwork
   | DISourceType          T.SourceType
   | DIProductName         String
+  | NoDeviceInfo     
+  | NoDeviceInfo'     Word8 BaseTypeValue
   deriving (Show)
 
 data DeviceTypeSubfield =
-    AntplusDeviceType   T.AntplusDeviceType
-  | AntDeviceType       Word8
+    DIAntplusDeviceType T.AntplusDeviceType
+  | DIAntDeviceType     Word8
+  | DIDeviceType'       Word8
+  deriving (Show)
+
+data DIProductSubfield =
+    DIGarminProduct T.GarminProduct
+  | DIProduct'      Word16
   deriving (Show)
 
 data TrainingFile = 
     TFTimestamp DateTime
   | TFType                  T.File
   | TFManufacturer          T.Manufacturer
-  | TFProduct               T.GarminProduct
-  | TFGarminProduct         T.GarminProduct
+  | TFProduct               Word16 -- TFProductSubfield
   | TFSerialNumber          Word32
   | TFTimeCreated           DateTime
   deriving (Show)
 
-newtype HRV = HRVTime Float
-            deriving (Show)
+data TFProductSubfield =
+    TFGarminProduct T.GarminProduct
+  | TFProduct'      Word16
+  deriving (Show)
 
-data CameraEvent = CETimestamp   DateTime
-                 | CETimestampMs Word16
-                 | CameraEventType        T.CameraEventType
-                 | CameraFileUUID         String
-                 | CameraOrientation      T.CameraOrientationType
-                 deriving (Show)
+newtype HRV = HRVTime Float
+  deriving (Show)
+
+data CameraEvent = 
+  CETimestamp   DateTime
+  | CETimestampMs Word16
+  | CameraEventType        T.CameraEventType
+  | CameraFileUUID         String
+  | CameraOrientation      T.CameraOrientationType
+  deriving (Show)
 
 data GyroscopeData = 
     GDTimestamp DateTime
@@ -556,7 +620,7 @@ data AccelerometerData =
 data ThreeDSensorCalibration = 
     TDSCTimestamp DateTime
   | SensorType                       T.SensorType
-  | CalibrationFactor                CalibrationFactorSubfield
+  | CalibrationFactor                Word32 -- CalibrationFactorSubfield 
   | CalibrationDivisor               Word32
   | LevelShift                       Word32
   | OffsetCal                        Int32
@@ -564,8 +628,9 @@ data ThreeDSensorCalibration =
   deriving (Show)
 
 data CalibrationFactorSubfield =
-    AccelCalFactor Word32
-  | GyroCalFactor  Word32
+    AccelCalFactor     Word32
+  | GyroCalFactor      Word32
+  | CalibrationFactor' Word32
   deriving (Show)
 
 data VideoFrame =
@@ -636,32 +701,32 @@ data VideoClip =
   deriving (Show)
 
 data Course =
-    Sport        T.Sport
-  | Name         String
-  | Capabilities T.CourseCapabilities
+    Sport         T.Sport
+  | Name          String
+  | Capabilities  T.CourseCapabilities
   deriving (Show)
 
 data CoursePoint =
-    CPMessageIndex T.MessageIndex
-  | CPTimestamp               DateTime
-  | CPPositionLat             Int32
-  | CPPositionLong            Int32
-  | CPDistance                Float
-  | CPType                    T.CoursePoint
-  | CPName                    String
-  | CPFavorite                Bool
+    CPMessageIndex     T.MessageIndex
+  | CPTimestamp        DateTime
+  | CPPositionLat      Int32
+  | CPPositionLong     Int32
+  | CPDistance         Float
+  | CPType             T.CoursePoint
+  | CPName             String
+  | CPFavorite         Bool
   deriving (Show)
 
 data SegmentID =
-    SegIDName    String
-  | SegIDUUID    String
-  | SegIDSport   T.Sport
-  | SegIDEnabled Bool
-  | UserProfilePrimaryKey    Word32
-  | DeviceID   Word32
-  | DefaultRaceLeader Word8
-  | DeleteStatus   T.SegmentDeleteStatus
-  | SelectionType  T.SegmentSelectionType
+    SegIDName             String
+  | SegIDUUID             String
+  | SegIDSport            T.Sport
+  | SegIDEnabled          Bool
+  | UserProfilePrimaryKey Word32
+  | DeviceID              Word32
+  | DefaultRaceLeader     Word8
+  | DeleteStatus          T.SegmentDeleteStatus
+  | SelectionType         T.SegmentSelectionType
   deriving (Show)
 
 data SegmentLeaderboardEntry =
@@ -696,8 +761,7 @@ data SegmentLap =
   | SegLapTotalElapsedTime  Float
   | SegLapTotalTimerTime    Float
   | SegLapTotalDistance     Float
-  | SegLapTotalCycles       Word32
-  | SegLapTotalStrokes      Word32
+  | SegLapTotalCycles       Word32 -- SegLapTotalCyclesSubfield
   | SegLapTotalCalories     Word16
   | SegLapTotalFatCalories  Word16
   | SegLapAvgSpeed          Float
@@ -772,6 +836,11 @@ data SegmentLap =
   | SegLapMaxCadencePosition     Word8
   deriving (Show)
 
+data SegLapTotalCyclesSubfield =
+    SegLapTotalStrokes Word32
+  | SegLapTotalCycles' Word32
+  deriving (Show)
+
 data SegmentFile =
     SegFileMessageIndex           T.MessageIndex
   | SegFileUUID                   String
@@ -794,11 +863,11 @@ data WorkoutStep =
     WktStepMessageIndex              T.MessageIndex
   | WktStepName                      String
   | WktStepDurationType              T.WktStepDuration
-  | WktStepDurationValue             DurationValueSubfield
+  | WktStepDurationValue             Word32 -- DurationValueSubfield
   | WktStepTargetType                T.WktStepTarget
-  | WktStepTargetValue               TargetValueSubfield
-  | WktStepCustomTargetValueLow      CustomTargetValueLowSubfield
-  | WktStepCustomTargetValueHigh     CustomTargetValueHighSubfield
+  | WktStepTargetValue               Word32 -- TargetValueSubfield
+  | WktStepCustomTargetValueLow      Word32 -- CustomTargetValueLowSubfield
+  | WktStepCustomTargetValueHigh     Word32 -- CustomTargetValueHighSubfield
   | WktStepIntensity                 T.Intensity
   deriving (Show)
 
@@ -809,6 +878,7 @@ data DurationValueSubfield =
   | DurationCalories Word32
   | DurationStep     Word32
   | DurationPower    T.WorkoutPower
+  | DurationValue'   Word32
   deriving (Show)
 
 data TargetValueSubfield =
@@ -820,6 +890,7 @@ data TargetValueSubfield =
   | RepeatCalories  Word32
   | RepeatHR        T.WorkoutHR
   | RepeatPower     T.WorkoutPower
+  | TargetValue'    Word32
   deriving (Show)
 
 data CustomTargetValueLowSubfield =
@@ -827,6 +898,7 @@ data CustomTargetValueLowSubfield =
   | CustomTargetHeartRateLow  T.WorkoutHR
   | CustomTargetCadenceLow    Word32
   | CustomTargetPowerLow      T.WorkoutPower
+  | CustomTargetValueLow'     Word32
   deriving (Show)
 
 data CustomTargetValueHighSubfield =
@@ -834,17 +906,22 @@ data CustomTargetValueHighSubfield =
   | CustomTargetHeartRateHigh  T.WorkoutHR
   | CustomTargetCadenceHigh    Word32
   | CustomTargetPowerHigh      T.WorkoutPower
+  | CustomTargetValueHigh'     Word32
   deriving (Show)
 
 data Schedule =
     ScheduleManufacturer  T.Manufacturer
-  | ScheduleProduct       T.GarminProduct
-  | ScheduleGarminProduct T.GarminProduct
+  | ScheduleProduct       Word16 -- ScheduleProductSubfield
   | ScheduleSerialNumber  Word32
   | ScheduleTimeCreated   DateTime
   | ScheduleCompleted     Bool
   | ScheduleType          T.Schedule
   | ScheduledTime LocalDateTime
+  deriving (Show)
+
+data ScheduleProductSubfield =
+    ScheduleGarminProduct T.GarminProduct
+  | ScheduleProduct'      Word16
   deriving (Show)
 
 data Totals =
@@ -904,9 +981,7 @@ data Monitoring =
   | MonitoringDeviceIndex                  T.DeviceIndex
   | MonitoringCalories                     Word16
   | MonitoringDistance                     Float
-  | MonitoringCycles                       Float
-  | MonitoringSteps                        Float
-  | MonitoringStrokes                      Float
+  | MonitoringCycles                       Float -- MonitoringCyclesSubfield
   | MonitoringActiveTime                   Float
   | MonitoringActivityType                 T.ActivityType
   | MonitoringActivitySubtype              T.ActivitySubtype
@@ -927,6 +1002,12 @@ data Monitoring =
   | MonitoringIntensity                    Float
   | MonitoringDurationMin                  Word16
   | MonitoringDuration                     Word32
+  deriving (Show)
+
+data MonitoringCyclesSubfield =
+    MonitoringSteps    Float
+  | MonitoringStrokes  Float
+  | MonitoringCycles'  Float
   deriving (Show)
 
 data MemoGlob =
