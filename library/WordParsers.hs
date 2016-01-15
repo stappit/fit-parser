@@ -18,7 +18,7 @@ combine offset arch w1 w2 = case arch of
 word8P :: Parser Word8
 word8P = do
   w    <- liftGet getWord8
-  crc1 <- liftM crc get
+  crc1 <- gets crcState
   modify $ setCRC (checkByte crc1 w)
   return w
 

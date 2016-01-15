@@ -42,11 +42,11 @@ data ParseError = CRCFail           !CRC
                 deriving Show
 
 data ParseState = ParseState {
-  size         :: !Size,
-  definitions  :: M.Map LocalMsgNum DefinitionMessage,
-  timestamp    :: Maybe Timestamp,
-  crc          :: !CRC,
-  globalMsgNum :: !GlobalMsgNum
+  totalBytesToparse :: !Size,
+  definitions       :: M.Map LocalMsgNum DefinitionMessage,
+  timestamp         :: Maybe Timestamp,
+  crcState          :: !CRC,
+  globalMsgNum      :: !GlobalMsgNum
 }
 
 addDef :: LocalMsgNum -> DefinitionMessage -> ParseState -> ParseState

@@ -41,7 +41,7 @@ hdrSizeP = do
   case sz of
     12 -> return Twelve
     14 -> return Fourteen
-    sz -> throwError $ InvalidHeaderSize sz
+    _  -> throwError $ InvalidHeaderSize sz
 
 toMsgSize :: HeaderSize -> MessageSize
 toMsgSize Twelve   = 12
@@ -55,7 +55,7 @@ dotFITP = do
 crcP :: Parser CRC
 crcP = do 
   crc1 <- word16P LittleEndian
-  crc2 <- liftM crc get
+  crc2 <- gets crcState
   if crc2 == 0
     then return crc1
     else throwError $ CRCFail crc2
@@ -100,14 +100,14 @@ globalMsgNumP arch = do
 
 dataP :: Header -> Parser DataMessage
 dataP hdr = do
-   defs <- liftM definitions get
+   defs <- gets definitions
    case hdr of
      DefnH _ -> throwError WrongMsgType
      DataH lMsg -> do
          profile <- maybe (throwError $ NoDefFound lMsg) profileP (M.lookup lMsg defs) 
          return $ Dat lMsg Nothing profile
      CompH lMsg offset -> do
-         ts     <- liftM timestamp get
+         ts     <- gets timestamp
          ts'    <- maybe (throwError NoTimestampFound) (return . addOffset offset) ts
          _      <- modify $ setTimestamp ts'
          profile <- maybe (throwError $ NoDefFound lMsg) profileP (M.lookup lMsg defs) 
@@ -122,7 +122,7 @@ messageP = do
 
 messagesP :: Parser [Message]
 messagesP = do
-  size <- liftM size get
+  size <- gets totalBytesToparse
   consumed  <- liftGet bytesRead
   if size > consumed
     then do
