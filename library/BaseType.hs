@@ -3,20 +3,20 @@ module BaseType where
 import Data.Word
 import Data.Int
 
-data BaseTypeValue = Enum    Word8
-                   | SInt8   Int8
-                   | UInt8   Word8
-                   | SInt16  Int16
-                   | UInt16  Word16
-                   | SInt32  Int32
-                   | UInt32  Word32
-                   | String  [Word8]
-                   | Float32 Float
-                   | Float64 Double
-                   | UInt8z  Word8
-                   | UInt16z Word16
-                   | UInt32z Word32
-                   | Byte    [Word8]
+data BaseTypeValue = Enum    !Word8
+                   | SInt8   !Int8
+                   | UInt8   !Word8
+                   | SInt16  !Int16
+                   | UInt16  !Word16
+                   | SInt32  !Int32
+                   | UInt32  !Word32
+                   | String  ![Word8]
+                   | Float32 !Float
+                   | Float64 !Double
+                   | UInt8z  !Word8
+                   | UInt16z !Word16
+                   | UInt32z !Word32
+                   | Byte    ![Word8]
                    deriving Show
 
 unEnum :: BaseTypeValue -> Maybe Word8

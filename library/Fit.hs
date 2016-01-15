@@ -9,24 +9,27 @@ import BaseType
 import CRC
 import Profiles
 
-data Fit = Fit FitHeader [Message] CRC
+data Fit = Fit !FitHeader ![Message] !CRC
   deriving Show
 
-data FitHeader = FitHdr HeaderSize ProtocollVersion ProfileVersion MessageSize (Maybe CRC)
+data FitHeader = FitHdr !HeaderSize !ProtocolVersion !ProfileVersion !MessageSize !(Maybe CRC)
   deriving Show
+
+data HeaderSize  = Twelve | Fourteen
+  deriving (Show)
 
 data Message = 
-    DefnM DefinitionMessage 
-  | DataM DataMessage
+    DefnM !DefinitionMessage 
+  | DataM !DataMessage
   deriving Show
 
-data DefinitionMessage = Def LocalMsgNum Arch GlobalMsgNum [FieldDefinition]
+data DefinitionMessage = Def !LocalMsgNum !Arch !GlobalMsgNum ![FieldDefinition]
   deriving Show
 
 data Header = 
-    DefnH LocalMsgNum
-  | DataH LocalMsgNum 
-  | CompH LocalMsgNum Offset
+    DefnH !LocalMsgNum
+  | DataH !LocalMsgNum 
+  | CompH !LocalMsgNum !Offset
   deriving Show
 
 makeHeader :: Word8 -> Header
@@ -48,20 +51,19 @@ data MessageType = DefnType | DataType
 data Arch = BigEndian | LittleEndian
   deriving Show
 
-data FieldDefinition = FieldDef FieldNumber FieldSize BaseType
+data FieldDefinition = FieldDef !FieldNumber !FieldSize !BaseType
   deriving Show
 
-data DataMessage = Dat LocalMsgNum (Maybe Timestamp) Profile
+data DataMessage = Dat !LocalMsgNum !(Maybe Timestamp) !Profile
   deriving Show
 
-data Field = Field String BaseTypeValue
+data Field = Field !String !BaseTypeValue
   deriving Show
 
 type Size        = Int64
-type HeaderSize  = Int64
 type MessageSize = Int64
-type ProtocollVersion = Word8
-type ProfileVersion   = Word16
+type ProtocolVersion = Word8
+type ProfileVersion  = Word16
 
 type GlobalMsgNum = Word16
 

@@ -6,7 +6,7 @@ module Parser where
 import Data.Int
 import Data.Word 
 import Data.Bits 
-import Data.Binary.Get -- binary parser combinators
+import Data.Binary.Get
 import Control.Applicative (Applicative)
 import Control.Monad.Except
 import Control.Monad.State.Lazy
@@ -28,24 +28,25 @@ liftGet = Parser . lift . lift
 bytesConsumed :: Parser Int64
 bytesConsumed = liftGet bytesRead
 
-data ParseError = CRCFail CRC
-                | NoDefFound LocalMsgNum
+data ParseError = CRCFail           !CRC
+                | NoDefFound        !LocalMsgNum
                 | WrongMsgType
-                | InvalidBasetype BaseType
-                | InvalidFieldNum GlobalMsgNum FieldNumber
-                | NoGlobalMsgFound GlobalMsgNum FieldNumber
+                | InvalidBasetype   !BaseType
+                | InvalidFieldNum   !GlobalMsgNum !FieldNumber
+                | NoGlobalMsgFound  !GlobalMsgNum !FieldNumber
                 | NoTimestampFound
-                | TypeMismatch GlobalMsgNum FieldNumber BaseTypeValue
-                | NoEnum Word16
+                | TypeMismatch      !GlobalMsgNum !FieldNumber !BaseTypeValue
+                | NoEnum            !Word16
                 | DotFIT
+                | InvalidHeaderSize !Word8
                 deriving Show
 
 data ParseState = ParseState {
-  size         :: Size,
+  size         :: !Size,
   definitions  :: M.Map LocalMsgNum DefinitionMessage,
   timestamp    :: Maybe Timestamp,
-  crc          :: CRC,
-  globalMsgNum :: GlobalMsgNum
+  crc          :: !CRC,
+  globalMsgNum :: !GlobalMsgNum
 }
 
 addDef :: LocalMsgNum -> DefinitionMessage -> ParseState -> ParseState

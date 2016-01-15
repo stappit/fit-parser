@@ -23,16 +23,29 @@ fitP = liftA3 Fit fitHeaderP messagesP crcP
 
 fitHeaderP :: Parser FitHeader
 fitHeaderP = do
-  hdrSize <- num8P
-  ptkV    <- num8P  
-  pfV     <- word16P LittleEndian
-  msgSize <- num32P LittleEndian
-  _       <- modify $ setSize (hdrSize + msgSize)
-  _       <- dotFITP
-  crc     <- if hdrSize > 12 
-               then liftM Just crcP
-               else return Nothing
-  return $ FitHdr hdrSize ptkV pfV msgSize crc
+    hdrSize <- hdrSizeP
+    let hdrSize' = toMsgSize hdrSize
+    ptkV    <- num8P  
+    pfV     <- num16P LittleEndian
+    msgSize <- num32P LittleEndian
+    _       <- dotFITP
+    crc     <- case hdrSize of
+                 Twelve   -> return Nothing
+                 Fourteen -> liftM Just crcP
+    _       <- modify $ setSize $ msgSize + hdrSize'
+    return $ FitHdr hdrSize ptkV pfV msgSize crc
+
+hdrSizeP :: Parser HeaderSize
+hdrSizeP = do
+  sz <- word8P
+  case sz of
+    12 -> return Twelve
+    14 -> return Fourteen
+    sz -> throwError $ InvalidHeaderSize sz
+
+toMsgSize :: HeaderSize -> MessageSize
+toMsgSize Twelve   = 12
+toMsgSize Fourteen = 14
 
 dotFITP :: Parser ()
 dotFITP = do
@@ -104,8 +117,8 @@ messageP :: Parser Message
 messageP = do
   hdr <- msgHeaderP
   case hdr of
-    (DefnH     lMsg) -> liftM DefnM $ definitionP lMsg
-    _        -> liftM DataM $ dataP hdr
+    (DefnH lMsg) -> liftM DefnM $ definitionP lMsg
+    _            -> liftM DataM $ dataP hdr
 
 messagesP :: Parser [Message]
 messagesP = do
