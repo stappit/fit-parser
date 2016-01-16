@@ -8,56 +8,6 @@ import Timestamp
 
 import qualified Types as T
 
-data Profile = 
-    FileIDProfile                  ![FileID]
-  | FileCreatorProfile             ![FileCreator]
-  | TimestampCorrelationProfile    ![TimestampCorrelation]
-  | SoftwareProfile                ![Software]
-  | SlaveDeviceProfile             ![SlaveDevice]
-  | CapabilitiesProfile            ![Capabilities]
-  | FileCapabilitiesProfile        ![FileCapabilities]
-  | MesgCapabilitiesProfile        ![MesgCapabilities]
-  | FieldCapabilitiesProfile       ![FieldCapabilities]
-  | ActivityProfile                ![Activity]
-  | SessionProfile                 ![Session]
-  | LapProfile                     ![Lap]
-  | LengthProfile                  ![Length]
-  | RecProfile                     ![Record]
-  | EventProfile                   ![Event]
-  | DeviceInfoProfile              ![DeviceInfo]
-  | TrainingFileProfile            ![TrainingFile]
-  | HRVProfile                     ![HRV]
-  | CameraEventProfile             ![CameraEvent]
-  | GyroscopeDataProfile           ![GyroscopeData]
-  | AccelerometerDataProfile       ![AccelerometerData]
-  | ThreeDSensorCalibrationProfile ![ThreeDSensorCalibration]
-  | VideoFrameProfile              ![VideoFrame]
-  | ObdiiDataProfile               ![ObdiiData]
-  | NmeaSentenceProfile            ![NmeaSentence]
-  | AviationAttitudeProfile        ![AviationAttitude]
-  | VideoProfile                   ![Video]
-  | VideoTitleProfile              ![VideoTitle]
-  | VideoDescriptionProfile        ![VideoDescription]
-  | VideoClipProfile               ![VideoClip]
-  | CourseProfile                  ![Course]
-  | CoursePointProfile             ![CoursePoint]
-  | SegmentIDProfile               ![SegmentID]
-  | SegmentLeaderboardEntryProfile ![SegmentLeaderboardEntry]
-  | SegmentPointProfile            ![SegmentPoint]
-  | SegmentLapProfile              ![SegmentLap]
-  | SegmentFileProfile             ![SegmentFile]
-  | WorkoutProfile                 ![Workout]
-  | WorkoutStepProfile             ![WorkoutStep]
-  | ScheduleProfile                ![Schedule]
-  | TotalsProfile                  ![Totals]
-  | WeightScaleProfile             ![WeightScale]
-  | BloodPressureProfile           ![BloodPressure]
-  | MonitoringInfoProfile          ![MonitoringInfo]
-  | MonitoringProfile              ![Monitoring]
-  | MemoGlobProfile                ![MemoGlob]
-  | NoProfile
-  deriving (Show)
-
 data FileID = 
     Type          !T.File
   | Manufacturer  !T.Manufacturer

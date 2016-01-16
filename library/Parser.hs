@@ -49,14 +49,16 @@ data ParseState = ParseState {
   globalMsgNum      :: !GlobalMsgNum
 }
 
+type Size        = Int64
+
 addDef :: LocalMsgNum -> DefinitionMessage -> ParseState -> ParseState
-addDef lMsg def (ParseState sz defs ts crc gMsg) = ParseState sz (M.insert lMsg def defs) ts crc gMsg
+addDef lNum def (ParseState sz defs ts crc gNum) = ParseState sz (M.insert lNum def defs) ts crc gNum
 
 setTimestamp :: Timestamp -> ParseState -> ParseState
-setTimestamp ts (ParseState sz defs _ crc gMsg) = ParseState sz defs (Just ts) crc gMsg
+setTimestamp ts (ParseState sz defs _ crc gNum) = ParseState sz defs (Just ts) crc gNum
 
 setSize :: Size -> ParseState -> ParseState
-setSize sz (ParseState _ defs ts crc gMsg) = ParseState sz defs ts crc gMsg
+setSize sz (ParseState _ defs ts crc gNum) = ParseState sz defs ts crc gNum
 
 addOffset :: Offset -> Timestamp -> Timestamp
 addOffset offset ts = (ts .&. tsMask) + offset' + rollover
@@ -69,7 +71,7 @@ addOffset offset ts = (ts .&. tsMask) + offset' + rollover
                  else 0x20
 
 setCRC :: CRC -> ParseState -> ParseState
-setCRC crc (ParseState sz defs ts _ gMsg) = ParseState sz defs ts crc gMsg
+setCRC crc (ParseState sz defs ts _ gNum) = ParseState sz defs ts crc gNum
 
 setGlobalMsgNum :: GlobalMsgNum -> ParseState -> ParseState
-setGlobalMsgNum gMsg (ParseState sz defs ts crc _) = ParseState sz defs ts crc gMsg
+setGlobalMsgNum gNum (ParseState sz defs ts crc _) = ParseState sz defs ts crc gNum

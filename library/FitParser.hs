@@ -54,21 +54,21 @@ dotFITP = do
 
 crcP :: Parser CRC
 crcP = do 
-  crc1 <- word16P LittleEndian
-  crc2 <- gets crcState
-  if crc2 == 0
-    then return crc1
-    else throwError $ CRCFail crc2
+    crc1 <- word16P LittleEndian
+    crc2 <- gets crcState
+    if crc2 == 0
+      then return crc1
+      else throwError $ CRCFail crc2
 
 definitionP :: LocalMsgNum -> Parser DefinitionMessage
-definitionP lMsg = do
+definitionP lNum = do
   _         <- reservedP
   arch      <- archP
-  gMsg      <- globalMsgNumP arch
+  gNum      <- globalMsgNumP arch
   numFields <- num8P
   defs      <- replicateM numFields fieldDefP
-  let def = Def lMsg arch gMsg defs
-  _         <- modify $ addDef lMsg def
+  let def = Def lNum arch gNum defs
+  _         <- modify $ addDef lNum def
   return def
 
 msgHeaderP :: Parser Header
@@ -81,8 +81,11 @@ archP = do
     then return BigEndian
     else return LittleEndian
 
+fNumP :: Parser FieldNumber
+fNumP = liftM FNum word8P
+
 fieldDefP :: Parser FieldDefinition
-fieldDefP = liftA3 FieldDef word8P num8P baseTypeP
+fieldDefP = liftA3 FieldDef fNumP num8P baseTypeP
 
 baseTypeP :: Parser Word8
 baseTypeP = do
@@ -95,29 +98,29 @@ reservedP = void word8P
 globalMsgNumP :: Arch -> Parser GlobalMsgNum
 globalMsgNumP arch = do
     w <- word16P arch
-    _ <- modify $ setGlobalMsgNum w
-    return w
+    _ <- modify $ setGlobalMsgNum $ GNum w
+    return $ GNum w
 
 dataP :: Header -> Parser DataMessage
 dataP hdr = do
    defs <- gets definitions
    case hdr of
      DefnH _ -> throwError WrongMsgType
-     DataH lMsg -> do
-         profile <- maybe (throwError $ NoDefFound lMsg) profileP (M.lookup lMsg defs) 
-         return $ Dat lMsg Nothing profile
-     CompH lMsg offset -> do
+     DataH lNum -> do
+         profile <- maybe (throwError $ NoDefFound lNum) profileP (M.lookup lNum defs) 
+         return $ Dat lNum Nothing profile
+     CompH lNum offset -> do
          ts     <- gets timestamp
          ts'    <- maybe (throwError NoTimestampFound) (return . addOffset offset) ts
          _      <- modify $ setTimestamp ts'
-         profile <- maybe (throwError $ NoDefFound lMsg) profileP (M.lookup lMsg defs) 
-         return $ Dat lMsg (Just ts') profile
+         profile <- maybe (throwError $ NoDefFound lNum) profileP (M.lookup lNum defs) 
+         return $ Dat lNum (Just ts') profile
 
 messageP :: Parser Message
 messageP = do
   hdr <- msgHeaderP
   case hdr of
-    (DefnH lMsg) -> liftM DefnM $ definitionP lMsg
+    (DefnH lNum) -> liftM DefnM $ definitionP lNum
     _            -> liftM DataM $ dataP hdr
 
 messagesP :: Parser [Message]
@@ -134,7 +137,7 @@ messagesP = do
 runFitParser :: Filename -> IO (Either ParseError Fit)
 runFitParser fname = do
   bytestring <- BL.readFile fname
-  return $ runGet (runExceptT $ evalStateT (runParser fitP) (ParseState 12 M.empty Nothing 0 0)) bytestring
+  return $ runGet (runExceptT $ evalStateT (runParser fitP) (ParseState 12 M.empty Nothing 0 $ GNum 0)) bytestring
 
 type Filename = String
 
