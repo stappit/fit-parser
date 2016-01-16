@@ -18,17 +18,21 @@ import BaseType
 import qualified Types as T
 
 profileP :: DefinitionMessage -> Parser Profile
-profileP (Def _ arch gNum defs) = case gNum of
-    GNum 0  -> liftM FileIDProfile      $ mapM (fileIDP arch) defs
-    {-GNum 18  -> liftM SessionProfile     $ mapM (sessionP arch) defs-}
-    GNum 19 -> liftM LapProfile         $ mapM (lapP arch) defs
-    GNum 20 -> liftM RecProfile         $ mapM (recordP arch) defs
-    GNum 21 -> liftM EventProfile       $ mapM (eventP  arch) defs             
-    GNum 23 -> liftM DeviceInfoProfile  $ mapM (deviceInfoP arch) defs         
-    {-GNum 34  -> liftM ActivityProfile    $ mapM (activityP arch) defs         -}
-    GNum 49 -> liftM FileCreatorProfile $ mapM (fileCreatorP arch) defs         
-    {-GNum 113 -> liftM ???                $ mapM (             arch) defs         -}
-    _       -> mapM_ (baseTypeValueP arch) defs >> return NoProfile
+profileP (Def _ arch gNum defs) = profP `catchError` handler
+  where
+    handler (InvalidFieldNum' fNum) = throwError $ InvalidFieldNum gNum fNum
+    handler e                       = throwError e
+    profP = case gNum of
+        GNum 0   -> liftM FileIDProfile      $ mapM (fileIDP arch) defs
+        GNum 18  -> liftM SessionProfile     $ mapM (sessionP arch) defs
+        GNum 19  -> liftM LapProfile         $ mapM (lapP arch) defs
+        GNum 20  -> liftM RecProfile         $ mapM (recordP arch) defs
+        GNum 21  -> liftM EventProfile       $ mapM (eventP  arch) defs             
+        GNum 23  -> liftM DeviceInfoProfile  $ mapM (deviceInfoP arch) defs         
+        GNum 34  -> liftM ActivityProfile    $ mapM (activityP arch) defs         
+        GNum 49  -> liftM FileCreatorProfile $ mapM (fileCreatorP arch) defs         
+        {-GNum 113 -> liftM ???                $ mapM (             arch) defs         -}
+        _       -> mapM_ (baseTypeValueP arch) defs >> return NoProfile
 
 fileIDP :: Arch -> FieldDefinition -> Parser FileID
 fileIDP arch fDef@(FieldDef fNum sz _) = case fNum of
@@ -39,7 +43,7 @@ fileIDP arch fDef@(FieldDef fNum sz _) = case fNum of
     FNum 4 -> liftM (maybe NoFileID $ TimeCreated . DateTime) $ uInt32P arch
     FNum 5 -> liftM (maybe NoFileID Number) $ uInt16P arch
     FNum 8 -> liftM (maybe NoFileID ProductName) $ stringP sz
-    FNum fNum' -> liftM (NoFileID' fNum') $ baseTypeValueP arch fDef
+    _      -> throwError $ InvalidFieldNum' fNum
 
 recordP :: Arch -> FieldDefinition -> Parser Record
 recordP arch fDef@(FieldDef fNum sz _) = case fNum of
@@ -63,21 +67,21 @@ recordP arch fDef@(FieldDef fNum sz _) = case fNum of
     FNum 19  -> liftM (maybe NoRecord RecTotalCycles) $ uInt32P arch
     FNum 28  -> liftM (maybe NoRecord RecCompressedAccumulatedPower) $ uInt16P arch
     FNum 29  -> liftM (maybe NoRecord RecAccumulatedPower) $ uInt32P arch
-    {-FNum 30  -> liftM RecLeftRightBalance enumP-}
+    FNum 30  -> liftM (maybe NoRecord $ RecLeftRightBalance . T.mkLRB) uInt8P 
     FNum 31  -> liftM (maybe NoRecord RecGpsAccuracy) uInt8P
     FNum 32  -> liftM (maybe NoRecord $ RecVerticalSpeed . scaleBy 1000) $ sInt16P arch
     FNum 33  -> liftM (maybe NoRecord RecCalories) $ uInt16P arch
     FNum 39  -> liftM (maybe NoRecord $ RecVerticalOscillation . scaleBy 10) $ uInt16P arch
     FNum 40  -> liftM (maybe NoRecord $ RecStanceTimePercent . scaleBy 100) $ uInt16P arch
     FNum 41  -> liftM (maybe NoRecord $ RecStanceTime . scaleBy 10) $ uInt16P arch
-    {-FNum 42  -> liftM RecActivityType esIntP-}
+    FNum 42  -> liftM (maybe NoRecord RecActivityType) enumP
     FNum 43  -> liftM (maybe NoRecord $ RecLeftTorqueEffectiveness . scaleBy 2) uInt8P
     FNum 44  -> liftM (maybe NoRecord $ RecRightTorqueEffectiveness . scaleBy 2) uInt8P
     FNum 45  -> liftM (maybe NoRecord $ RecLeftPedalSmoothness     . scaleBy 2) uInt8P
     FNum 46  -> liftM (maybe NoRecord $ RecRightPedalSmoothness    . scaleBy 2) uInt8P
     FNum 47  -> liftM (maybe NoRecord $ RecCombinedPedalSmoothness . scaleBy 2) uInt8P
     FNum 48  -> liftM (maybe NoRecord $ RecTime128                 . scaleBy 128) uInt8P
-    {-FNum 49  -> liftM RecStrokeType esIntP-}
+    FNum 49  -> liftM (maybe NoRecord RecStrokeType) enumP
     FNum 50  -> liftM (maybe NoRecord RecZone) uInt8P
     FNum 51  -> liftM (maybe NoRecord $ RecBallSpeed               . scaleBy 100) $ uInt16P arch
     FNum 52  -> liftM (maybe NoRecord $ RecCadence256              . scaleBy 256) $ uInt16P arch
@@ -86,21 +90,20 @@ recordP arch fDef@(FieldDef fNum sz _) = case fNum of
     FNum 55  -> liftM (maybe NoRecord $ RecTotalHemoglobinConcMin  . scaleBy 100) $ uInt16P arch
     FNum 56  -> liftM (maybe NoRecord $ RecTotalHemoglobinConcMax  . scaleBy 100) $ uInt16P arch
     FNum 57  -> liftM (maybe NoRecord $ RecSaturatedHemoglobinPercent . scaleBy 10) $ uInt16P arch
-    FNum 58  -> liftM (maybe NoRecord $ RecSaturatedHemoglobinPercentMin. scaleBy 10) $ uInt16P arch
-    FNum 59  -> liftM (maybe NoRecord $ RecSaturatedHemoglobinPercentMax. scaleBy 10) $ uInt16P arch
+    FNum 58  -> liftM (maybe NoRecord $ RecSaturatedHemoglobinPercentMin . scaleBy 10) $ uInt16P arch
+    FNum 59  -> liftM (maybe NoRecord $ RecSaturatedHemoglobinPercentMax . scaleBy 10) $ uInt16P arch
     FNum 62  -> liftM (maybe NoRecord $ RecDeviceIndex . T.Creator) uInt8P
     FNum 67  -> liftM (maybe NoRecord RecLeftPco) sInt8P
     FNum 68  -> liftM (maybe NoRecord RecRightPco) sInt8P
-    FNum 69  -> liftM (maybe NoRecord $ RecLeftPowerPhase . scaleBy 0.7111111) uInt8P
-    FNum 70  -> liftM (maybe NoRecord $ RecLeftPowerPhasePeak      . scaleBy 0.7111111) uInt8P
-    FNum 71  -> liftM (maybe NoRecord $ RecRightPowerPhase         . scaleBy 0.7111111) uInt8P
-    FNum 72  -> liftM (maybe NoRecord $ RecRightPowerPhasePeak     . scaleBy 0.7111111) uInt8P
-    FNum 73  -> liftM (maybe NoRecord $ RecEnhancedSpeed           . scaleBy 1000) $ uInt32P arch
-    FNum 78  -> liftM (maybe NoRecord $ RecEnhancedAltitude        . translateBy 500 . scaleBy 5) $ uInt32P arch
+    FNum 69  -> liftM (maybe NoRecord $ RecLeftPowerPhase      . scaleBy 0.7111111) uInt8P
+    FNum 70  -> liftM (maybe NoRecord $ RecLeftPowerPhasePeak  . scaleBy 0.7111111) uInt8P
+    FNum 71  -> liftM (maybe NoRecord $ RecRightPowerPhase     . scaleBy 0.7111111) uInt8P
+    FNum 72  -> liftM (maybe NoRecord $ RecRightPowerPhasePeak . scaleBy 0.7111111) uInt8P
+    FNum 73  -> liftM (maybe NoRecord $ RecEnhancedSpeed . scaleBy 1000) $ uInt32P arch
+    FNum 78  -> liftM (maybe NoRecord $ RecEnhancedAltitude . translateBy 500 . scaleBy 5) $ uInt32P arch
     FNum 81  -> liftM (maybe NoRecord $ RecBatterySoc . scaleBy 2) uInt8P
     FNum 82  -> liftM (maybe NoRecord RecMotorPower) $ uInt16P arch
-    {-| otherwise = baseTypeValueP arch fDef >> return NoRecord-}
-    FNum fNum' -> liftM (NoRecord' fNum') $ baseTypeValueP arch fDef
+    _        -> throwError $ InvalidFieldNum' fNum
 
 eventP :: Arch -> FieldDefinition -> Parser Event
 eventP arch fDef@(FieldDef fNum _ _) = case fNum of
@@ -147,14 +150,14 @@ fileCreatorP :: Arch -> FieldDefinition -> Parser FileCreator
 fileCreatorP arch (FieldDef fNum _ _) = case fNum of
     FNum 0 -> liftM SoftwareVersion $ word16P arch
     FNum 1 -> liftM HardwareVersion word8P
-    _      -> throwError undefined
+    _      -> throwError $ InvalidFieldNum' fNum
 
 lapP :: Arch -> FieldDefinition -> Parser Lap
 lapP arch fDef@(FieldDef fNum _ _) = case fNum of
-    {-FNum 254 -> liftM (maybe NoLap LapMessageIndex) $ enum16P arch-}
+    FNum 254 -> liftM (maybe NoLap $ LapMessageIndex . T.mkMsgIdx) $ uInt16P arch
     FNum 253 -> liftM (maybe NoLap $ LapTimestamp . DateTime) $ uInt32P arch
-    {-FNum 0   -> liftM (maybe NoLap LapEvent) enumP-}
-    {-FNum 1   -> liftM (maybe NoLap LapEventType) enumP-}
+    FNum 0   -> liftM (maybe NoLap LapEvent) enumP
+    FNum 1   -> liftM (maybe NoLap LapEventType) enumP
     FNum 2   -> liftM (maybe NoLap $ LapStartTime . DateTime) $ uInt32P arch
     FNum 3   -> liftM (maybe NoLap LapStartPositionLat) $ sInt32P arch
     FNum 4   -> liftM (maybe NoLap LapStartPositionLong) $ sInt32P arch
@@ -176,17 +179,17 @@ lapP arch fDef@(FieldDef fNum _ _) = case fNum of
     FNum 20  -> liftM (maybe NoLap LapMaxPower) $ uInt16P arch
     FNum 21  -> liftM (maybe NoLap LapTotalAscent) $ uInt16P arch
     FNum 22  -> liftM (maybe NoLap LapTotalDescent) $ uInt16P arch
-    {-FNum 23  -> liftM (maybe NoLap LapIntensity) enumP-}
-    {-FNum 24  -> liftM (maybe NoLap LapLapTrigger) enumP-}
-    {-FNum 25  -> liftM (maybe NoLap LapSport) enumP-}
+    FNum 23  -> liftM (maybe NoLap LapIntensity) enumP
+    FNum 24  -> liftM (maybe NoLap LapLapTrigger) enumP
+    FNum 25  -> liftM (maybe NoLap LapSport) enumP
     FNum 26  -> liftM (maybe NoLap LapEventGroup) uInt8P
     FNum 32  -> liftM (maybe NoLap LapNumLengths) $ uInt16P arch
     FNum 33  -> liftM (maybe NoLap LapNormalizedPower) $ uInt16P arch
-    {-FNum 34  -> liftM (maybe NoLap LapLeftRightBalance) $ enum16P arch-}
+    FNum 34  -> liftM (maybe NoLap $ LapLeftRightBalance . T.mkLRB100) $ uInt16P arch
     FNum 35  -> liftM (maybe NoLap LapFirstLengthIndex) $ uInt16P arch
     FNum 37  -> liftM (maybe NoLap $ LapAvgStrokeDistance . scaleBy 100) $ uInt16P arch
-    {-FNum 38  -> liftM (maybe NoLap LapSwimStroke) enumP-}
-    {-FNum 39  -> liftM (maybe NoLap LapSubSport) enumP-}
+    FNum 38  -> liftM (maybe NoLap LapSwimStroke) enumP
+    FNum 39  -> liftM (maybe NoLap LapSubSport) enumP
     FNum 40  -> liftM (maybe NoLap LapNumActiveLengths) $ uInt16P arch
     FNum 41  -> liftM (maybe NoLap LapTotalWork) $ uInt32P arch
     FNum 42  -> liftM (maybe NoLap $ LapAvgAltitude . translateBy 500 . scaleBy 5) $ uInt16P arch
@@ -211,7 +214,7 @@ lapP arch fDef@(FieldDef fNum _ _) = case fNum of
     FNum 61  -> liftM (maybe NoLap LapRepetitionNum) $ uInt16P arch
     FNum 62  -> liftM (maybe NoLap $ LapMinAltitude . translateBy 500 . scaleBy 5) $ uInt16P arch
     FNum 63  -> liftM (maybe NoLap LapMinHeartRate) uInt8P
-    {-FNum 71  -> liftM (maybe NoLap LapWktStepIndex) $ enum16P arch-}
+    FNum 71  -> liftM (maybe NoLap $ LapWktStepIndex . T.mkMsgIdx) $ uInt16P arch
     FNum 74  -> liftM (maybe NoLap LapOpponentScore) $ uInt16P arch
     FNum 75  -> liftM (maybe NoLap LapStrokeCount) $ uInt16P arch
     FNum 76  -> liftM (maybe NoLap LapZoneCount) $ uInt16P arch
@@ -255,6 +258,136 @@ lapP arch fDef@(FieldDef fNum _ _) = case fNum of
     FNum 117 -> liftM (maybe NoLap $ LapLevBatteryConsumption . scaleBy 2) uInt8P
     {-| otherwise   = baseTypeValueP arch fDef >> return NoLap-}
     FNum fNum' -> liftM (NoLap' fNum') $ baseTypeValueP arch fDef
+
+activityP :: Arch -> FieldDefinition -> Parser Activity
+activityP arch (FieldDef fNum _ _) = case fNum of
+    FNum 253 -> liftM (maybe NoActivity $ ActivityTimestamp . DateTime) $ uInt32P arch
+    FNum 0   -> liftM (maybe NoActivity ActivityTotalTimerTime) $ uInt32P arch 
+    FNum 1   -> liftM (maybe NoActivity ActivityNumSessions) $ uInt16P arch
+    FNum 2   -> liftM (maybe NoActivity ActivityType) enumP
+    FNum 3   -> liftM (maybe NoActivity ActivityEvent) enumP
+    FNum 4   -> liftM (maybe NoActivity ActivityEventType) enumP
+    FNum 5   -> liftM (maybe NoActivity $ ActivityLocalTimestamp . LocalDateTime) $ uInt32P arch
+    FNum 6   -> liftM (maybe NoActivity ActivityEventGroup) uInt8P
+    _        -> throwError $ InvalidFieldNum' fNum
+
+sessionP :: Arch -> FieldDefinition -> Parser Session
+sessionP arch fDef@(FieldDef fNum sz _) = case fNum of
+    FNum 254 -> liftM (maybe NoSession $ SessionMessageIndex . T.mkMsgIdx) $ uInt16P arch
+    FNum 253 -> liftM (maybe NoSession $ SessionTimestamp . DateTime) $ uInt32P arch
+    FNum 0   -> liftM (maybe NoSession SessionEvent) enumP
+    FNum 1   -> liftM (maybe NoSession SessionEventType) enumP
+    FNum 2   -> liftM (maybe NoSession $ SessionStartTime . DateTime) $ uInt32P arch
+    FNum 3   -> liftM (maybe NoSession SessionStartPositionLat) $ sInt32P arch
+    FNum 4   -> liftM (maybe NoSession SessionStartPositionLong) $ sInt32P arch
+    FNum 5   -> liftM (maybe NoSession SessionSport) enumP
+    FNum 6   -> liftM (maybe NoSession SessionSubSport) enumP
+    FNum 7   -> liftM (maybe NoSession $ SessionTotalElapsedTime . scaleBy 1000) $ uInt32P arch
+    FNum 8   -> liftM (maybe NoSession $ SessionTotalTimerTime   . scaleBy 1000) $ uInt32P arch
+    FNum 9   -> liftM (maybe NoSession $ SessionTotalDistance    . scaleBy 100)  $ uInt32P arch
+    {-FNum 10  -> liftM SessionTotalCycles                   -}  -- dynamic
+    FNum 11  -> liftM (maybe NoSession SessionTotalCalories) $ uInt16P arch
+    FNum 13  -> liftM (maybe NoSession SessionTotalFatCalories) $ uInt16P arch
+    FNum 14  -> liftM (maybe NoSession $ SessionAvgSpeed . scaleBy 1000) $ uInt16P arch
+    FNum 15  -> liftM (maybe NoSession $ SessionMaxSpeed . scaleBy 1000) $ uInt16P arch
+    FNum 16  -> liftM (maybe NoSession SessionAvgHeartRate) uInt8P
+    FNum 17  -> liftM (maybe NoSession SessionMaxHeartRate) uInt8P
+    {-FNum 18  -> liftM SessionAvgCadence                     dynamic-}
+    {-FNum 19  -> liftM SessionMaxCadence                     dynamic-}
+    FNum 20  -> liftM (maybe NoSession SessionAvgPower) $ uInt16P arch
+    FNum 21  -> liftM (maybe NoSession SessionMaxPower) $ uInt16P arch
+    FNum 22  -> liftM (maybe NoSession SessionTotalAscent) $ uInt16P arch
+    FNum 23  -> liftM (maybe NoSession SessionTotalDescent) $ uInt16P arch
+    FNum 24  -> liftM (maybe NoSession $ SessionTotalTrainingEffect . scaleBy 10) uInt8P
+    FNum 25  -> liftM (maybe NoSession SessionFirstLapIndex) $ uInt16P arch
+    FNum 26  -> liftM (maybe NoSession SessionNumLaps) $ uInt16P arch
+    FNum 27  -> liftM (maybe NoSession SessionEventGroup) uInt8P
+    FNum 28  -> liftM (maybe NoSession SessionTrigger) enumP
+    FNum 29  -> liftM (maybe NoSession SessionNecLat) $ sInt32P arch
+    FNum 30  -> liftM (maybe NoSession SessionNecLong) $ sInt32P arch
+    FNum 31  -> liftM (maybe NoSession SessionSwcLat) $ sInt32P arch
+    FNum 32  -> liftM (maybe NoSession SessionSwcLong) $ sInt32P arch
+    FNum 34  -> liftM (maybe NoSession SessionNormalizedPower) $ uInt16P arch
+    FNum 35  -> liftM (maybe NoSession $ SessionTrainingStressScore . scaleBy 10) $ uInt16P arch
+    FNum 36  -> liftM (maybe NoSession $ SessionIntensityFactor . scaleBy 1000) $ uInt16P arch
+    FNum 37  -> liftM (maybe NoSession $ SessionLeftRightBalance . T.mkLRB100) $ uInt16P arch
+    FNum 41  -> liftM (maybe NoSession $ SessionAvgStrokeCount . scaleBy 10) $ uInt32P arch
+    FNum 42  -> liftM (maybe NoSession $ SessionAvgStrokeDistance . scaleBy 100) $ uInt16P arch
+    FNum 43  -> liftM (maybe NoSession SessionSwimStroke) enumP
+    FNum 44  -> liftM (maybe NoSession $ SessionPoolLength . scaleBy 100) $ uInt16P arch
+    FNum 45  -> liftM (maybe NoSession SessionThresholdPower) $ uInt16P arch
+    FNum 46  -> liftM (maybe NoSession SessionPoolLengthUnit) enumP
+    FNum 47  -> liftM (maybe NoSession SessionNumActiveLengths) $ uInt16P arch
+    FNum 48  -> liftM (maybe NoSession SessionTotalWork) $ uInt32P arch
+    FNum 49  -> liftM (maybe NoSession $ SessionAvgAltitude . translateBy 500 . scaleBy 5) $ uInt16P arch
+    FNum 50  -> liftM (maybe NoSession $ SessionMaxAltitude . translateBy 500 . scaleBy 5) $ uInt16P arch
+    FNum 51  -> liftM (maybe NoSession SessionGPSAccuracy) uInt8P
+    FNum 52  -> liftM (maybe NoSession $ SessionAvgGrade . scaleBy 100) $ sInt16P arch
+    FNum 53  -> liftM (maybe NoSession $ SessionAvgPosGrade . scaleBy 100) $ sInt16P arch
+    FNum 54  -> liftM (maybe NoSession $ SessionAvgNegGrade . scaleBy 100) $ sInt16P arch
+    FNum 55  -> liftM (maybe NoSession $ SessionMaxPosGrade . scaleBy 100) $ sInt16P arch
+    FNum 56  -> liftM (maybe NoSession $ SessionMaxNegGrade . scaleBy 100) $ sInt16P arch
+    FNum 57  -> liftM (maybe NoSession SessionAvgTemperature) sInt8P
+    FNum 58  -> liftM (maybe NoSession SessionMaxTemperature) sInt8P
+    FNum 59  -> liftM (maybe NoSession $ SessionTotalMovingTime . scaleBy 1000) $ uInt32P arch
+    FNum 60  -> liftM (maybe NoSession $ SessionAvgPosVerticalSpeed . scaleBy 1000) $ sInt16P arch
+    FNum 61  -> liftM (maybe NoSession $ SessionAvgNegVerticalSpeed . scaleBy 1000) $ sInt16P arch
+    FNum 62  -> liftM (maybe NoSession $ SessionMaxPosVerticalSpeed . scaleBy 1000) $ sInt16P arch
+    FNum 63  -> liftM (maybe NoSession $ SessionMaxNegVerticalSpeed . scaleBy 1000) $ sInt16P arch
+    FNum 64  -> liftM (maybe NoSession SessionMinHeartRate) uInt8P
+    FNum 65  -> liftM (maybe NoSession $ SessionTimeInHRZone      . scaleBy 1000) $ uInt32P arch
+    FNum 66  -> liftM (maybe NoSession $ SessionTimeInSpeedZone   . scaleBy 1000) $ uInt32P arch
+    FNum 67  -> liftM (maybe NoSession $ SessionTimeInCadenceZone . scaleBy 1000) $ uInt32P arch
+    FNum 68  -> liftM (maybe NoSession $ SessionTimeInPowerZone   . scaleBy 1000) $ uInt32P arch
+    FNum 69  -> liftM (maybe NoSession $ SessionAvgLapTime . scaleBy 1000) $ uInt32P arch
+    FNum 70  -> liftM (maybe NoSession SessionBestLapIndex) $ uInt16P arch
+    FNum 71  -> liftM (maybe NoSession $ SessionMinAltitude . translateBy 500 . scaleBy 5) $ uInt16P arch
+    FNum 82  -> liftM (maybe NoSession SessionPlayerScore) $ uInt16P arch
+    FNum 83  -> liftM (maybe NoSession SessionOpponentScore) $ uInt16P arch
+    FNum 84  -> liftM (maybe NoSession SessionOpponentName) $ stringP sz
+    FNum 85  -> liftM (maybe NoSession SessionStrokeCount) $ uInt16P arch
+    FNum 86  -> liftM (maybe NoSession SessionZoneCount) $ uInt16P arch
+    FNum 87  -> liftM (maybe NoSession $ SessionMaxBallSpeed . scaleBy 100) $ uInt16P arch
+    FNum 88  -> liftM (maybe NoSession $ SessionAvgBallSpeed . scaleBy 100) $ uInt16P arch
+    FNum 89  -> liftM (maybe NoSession $ SessionAvgVerticalOscillation . scaleBy 10) $ uInt16P arch
+    FNum 90  -> liftM (maybe NoSession $ SessionAvgStanceTimePercent . scaleBy 100) $ uInt16P arch
+    FNum 91  -> liftM (maybe NoSession $ SessionAvgStanceTime  . scaleBy 10) $ uInt16P arch
+    FNum 92  -> liftM (maybe NoSession $ SessionAvgFractionalCadence . scaleBy 128) uInt8P
+    FNum 93  -> liftM (maybe NoSession $ SessionMaxFractionalCadence . scaleBy 128) uInt8P
+    FNum 94  -> liftM (maybe NoSession $ SessionTotalFractionalCycles . scaleBy 128) uInt8P
+    FNum 95  -> liftM (maybe NoSession $ SessionAvgTotalHemoglobinConc  . scaleBy 100) $ uInt16P arch
+    FNum 96  -> liftM (maybe NoSession $ SessionMinTotalHemoglobinConc  . scaleBy 100) $ uInt16P arch
+    FNum 97  -> liftM (maybe NoSession $ SessionMaxTotalHemoglobinConc  . scaleBy 100) $ uInt16P arch
+    FNum 98  -> liftM (maybe NoSession $ SessionAvgSaturatedHemoglobinPercent  . scaleBy 10) $ uInt16P arch
+    FNum 99  -> liftM (maybe NoSession $ SessionMinSaturatedHemoglobinPercent  . scaleBy 10) $ uInt16P arch
+    FNum 100 -> liftM (maybe NoSession $ SessionMaxSaturatedHemoglobinPercent  . scaleBy 10) $ uInt16P arch
+    FNum 101 -> liftM (maybe NoSession $ SessionAvgLeftTorqueEffectiveness  . scaleBy 2) uInt8P
+    FNum 102 -> liftM (maybe NoSession $ SessionAvgRightTorqueEffectiveness . scaleBy 2) uInt8P
+    FNum 103 -> liftM (maybe NoSession $ SessionAvgLeftPedalSmoothness . scaleBy 2) uInt8P
+    FNum 104 -> liftM (maybe NoSession $ SessionAvgRightPedalSmoothness . scaleBy 2) uInt8P
+    FNum 105 -> liftM (maybe NoSession $ SessionAvgCombinedPedalSmoothness . scaleBy 2) uInt8P
+    FNum 111 -> liftM (maybe NoSession SessionSportIndex) uInt8P
+    FNum 112 -> liftM (maybe NoSession $ SessionTimeStanding . scaleBy 1000) $ uInt32P arch
+    FNum 113 -> liftM (maybe NoSession SessionStandCount) $ uInt16P arch
+    FNum 114 -> liftM (maybe NoSession SessionAvgLeftPco) sInt8P 
+    FNum 115 -> liftM (maybe NoSession SessionAvgRightPco) sInt8P
+    FNum 116 -> liftM (maybe NoSession $ SessionAvgLeftPowerPhase      . scaleBy 0.7111111) uInt8P
+    FNum 117 -> liftM (maybe NoSession $ SessionAvgLeftPowerPhasePeak  . scaleBy 0.7111111) uInt8P
+    FNum 118 -> liftM (maybe NoSession $ SessionAvgRightPowerPhase     . scaleBy 0.7111111) uInt8P
+    FNum 119 -> liftM (maybe NoSession $ SessionAvgRightPowerPhasePeak . scaleBy 0.7111111) uInt8P
+    FNum 120 -> liftM (maybe NoSession SessionAvgPowerPosition) $ uInt16P arch
+    FNum 121 -> liftM (maybe NoSession SessionMaxPowerPosition) $ uInt16P arch
+    FNum 122 -> liftM (maybe NoSession SessionAvgCadencePosition) uInt8P
+    FNum 123 -> liftM (maybe NoSession SessionMaxCadencePosition) uInt8P
+    FNum 124 -> liftM (maybe NoSession $ SessionEnhancedAvgSpeed . scaleBy 1000) $ uInt32P arch
+    FNum 125 -> liftM (maybe NoSession $ SessionEnhancedMaxSpeed . scaleBy 1000) $ uInt32P arch
+    FNum 126 -> liftM (maybe NoSession $ SessionEnhancedAvgAltitude . translateBy 500 . scaleBy 5) $ uInt32P arch
+    FNum 127 -> liftM (maybe NoSession $ SessionEnhancedMinAltitude . translateBy 500 . scaleBy 5) $ uInt32P arch
+    FNum 128 -> liftM (maybe NoSession $ SessionEnhancedMaxAltitude . translateBy 500 . scaleBy 5) $ uInt32P arch
+    FNum 129 -> liftM (maybe NoSession SessionAvgLevMotorPower) $ uInt16P arch
+    FNum 130 -> liftM (maybe NoSession SessionMaxLevMotorPower) $ uInt16P arch
+    FNum 131 -> liftM (maybe NoSession $ SessionLevBatteryConsumption . scaleBy 2) uInt8P
+    FNum fNum' -> liftM (NoSession' fNum') $ baseTypeValueP arch fDef
 
 baseTypeValueP :: Arch -> FieldDefinition -> Parser BaseTypeValue
 baseTypeValueP arch fDef = case fDef of
@@ -325,7 +458,7 @@ enumP = do
 enum16P :: Enum' a => Arch -> Parser (Maybe a)
 enum16P arch = do
     w <- word16P arch
-    if w == 0xFF
+    if w == 0xFFFF
       then return Nothing
       else maybe (throwError $ NoEnum w) (return . Just) (toEnum' w)
 
@@ -360,7 +493,7 @@ uInt16P arch = do
 uInt16zP :: Arch -> Parser (Maybe Word16)
 uInt16zP arch = do
     w <- word16P arch
-    if w == 0
+    if w == 0x0000
       then return Nothing
       else return $ Just w
 

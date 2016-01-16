@@ -104,6 +104,7 @@ data Activity =
   | ActivityEventType      !T.EventType
   | ActivityLocalTimestamp !LocalDateTime
   | ActivityEventGroup     !Word8
+  | NoActivity
   deriving (Show)
 
 data Session = 
@@ -221,6 +222,8 @@ data Session =
   | SessionAvgLevMotorPower              !Word16
   | SessionMaxLevMotorPower              !Word16
   | SessionLevBatteryConsumption         !Float
+  | NoSession
+  | NoSession'                           !Word8 !BaseTypeValue
   deriving (Show)
 
 data STotalCyclesSubfield =

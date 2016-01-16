@@ -2,8 +2,11 @@ module Types where
 
 import Data.Word
 import Enum
+import Data.Bits ((.&.), testBit)
 
 import qualified Data.Map as M
+
+import Prelude hiding (Right)
 
 data File = Device 
           | Settings
@@ -146,7 +149,7 @@ instance Enum' Checksum where
   fromEnum' Ok = 1
   toEnum' 0 = Just $ toEnum 0
   toEnum' 1 = Just $ toEnum 1
-  toEnum' n = Nothing
+  toEnum' _ = Nothing
 
 data FileFlag =
     Read
@@ -159,7 +162,7 @@ instance Enum' FileFlag where
   toEnum' 2 = Just $ toEnum 2
   toEnum' 4 = Just $ toEnum 4
   toEnum' 8 = Just $ toEnum 8
-  toEnum' n = Nothing
+  toEnum' _ = Nothing
 
 data MesgCount =
     NumPerFile
@@ -167,18 +170,14 @@ data MesgCount =
   | MaxPerFileType
   deriving (Show, Enum, Bounded)
 
-data MessageIndex =
-    Selected
-  | Reserved
-  | Mask
+data MessageIndex = MI !Bool !Word16
   deriving (Show)
 
-instance Enum' MessageIndex where
-  toEnum' 0x8000 = Just Selected
-  toEnum' 0x7000 = Just Reserved
-  toEnum' 0x0FFF = Just Mask
-  toEnum' _      = Nothing
-  fromEnum' = undefined
+mkMsgIdx :: Word16 -> MessageIndex
+mkMsgIdx w = MI selected index
+  where
+    index    = w .&. 0x0FFF
+    selected = w `testBit` 15
 
 newtype DeviceIndex = 
     Creator Word8
@@ -333,6 +332,12 @@ data DisplayMeasure =
   | Statute
   deriving (Show, Enum, Bounded)
 
+instance Enum' DisplayMeasure where
+    toEnum' 0 = Just Metric
+    toEnum' 1 = Just Statute
+    toEnum' _ = Nothing
+    fromEnum' = undefined
+
 data DisplayHeart = 
     BPM
   | Max
@@ -437,6 +442,56 @@ data Sport =
   | Kitesurfing
   | AllSports
   deriving (Show)
+
+instance Enum' Sport where
+  toEnum' 0  = Just GenericSport
+  toEnum' 1  = Just Running
+  toEnum' 2  = Just Cycling
+  toEnum' 3  = Just Transition
+  toEnum' 4  = Just FitnessEquipment
+  toEnum' 5  = Just Swimming
+  toEnum' 6  = Just Basketball
+  toEnum' 7  = Just Soccer
+  toEnum' 8  = Just Tennis
+  toEnum' 9  = Just AmericanFootball
+  toEnum' 10 = Just Training
+  toEnum' 11 = Just Walking
+  toEnum' 12 = Just CrossCountrySkiing
+  toEnum' 13 = Just AlpineSkiing
+  toEnum' 14 = Just Snowboarding
+  toEnum' 15 = Just Rowing
+  toEnum' 16 = Just Mountaineering
+  toEnum' 17 = Just Hiking
+  toEnum' 18 = Just Multisport
+  toEnum' 19 = Just Paddling
+  toEnum' 20 = Just Flying
+  toEnum' 21 = Just EBiking
+  toEnum' 22 = Just Motorcycling
+  toEnum' 23 = Just Boating
+  toEnum' 24 = Just Driving
+  toEnum' 25 = Just Golf
+  toEnum' 26 = Just HangGliding
+  toEnum' 27 = Just HorsebackRiding
+  toEnum' 28 = Just Hunting
+  toEnum' 29 = Just Fishing
+  toEnum' 30 = Just InlineSkating
+  toEnum' 31 = Just RockClimbing
+  toEnum' 32 = Just Sailing
+  toEnum' 33 = Just IceSkating
+  toEnum' 34 = Just SkyDiving
+  toEnum' 35 = Just Snowshoeing
+  toEnum' 36 = Just Snowmobiling
+  toEnum' 37 = Just StandUpPaddleboarding
+  toEnum' 38 = Just Surfing
+  toEnum' 39 = Just Wakeboarding
+  toEnum' 40 = Just WaterSkiing
+  toEnum' 41 = Just Kayaking
+  toEnum' 42 = Just Rafting
+  toEnum' 43 = Just Windsurfing
+  toEnum' 44 = Just Kitesurfing
+  toEnum' 254 = Just AllSports
+  toEnum' _  = Nothing
+  fromEnum' = undefined
 
 data SportBits0 =
     Generic0
@@ -547,6 +602,53 @@ data SubSport =
   | AllSubSports
   deriving (Show)
 
+instance Enum' SubSport where
+  toEnum' 0  = Just GenericSubSport
+  toEnum' 1  = Just TreadmillSubSport
+  toEnum' 2  = Just StreetSubSport
+  toEnum' 3  = Just TrailSubSport
+  toEnum' 4  = Just TrackSubSport
+  toEnum' 5  = Just SpinSubSport
+  toEnum' 6  = Just IndoorCyclingSubSport
+  toEnum' 7  = Just RoadSubSport
+  toEnum' 8  = Just MountainSubSport
+  toEnum' 9  = Just DownhillSubSport
+  toEnum' 10 = Just RecumbentSubSport
+  toEnum' 11 = Just CyclocrossSubSport
+  toEnum' 12 = Just HandCyclingSubSport
+  toEnum' 13 = Just TrackCyclingSubSport
+  toEnum' 14 = Just IndoorRowingSubSport
+  toEnum' 15 = Just EllipticalSubSport
+  toEnum' 16 = Just StairClimbingSubSport
+  toEnum' 17 = Just LapSwimmingSubSport
+  toEnum' 18 = Just OpenWaterSubSport
+  toEnum' 19 = Just FlexibilityTrainingSubSport
+  toEnum' 20 = Just StrengthTrainingSubSport
+  toEnum' 21 = Just WarmUpSubSport
+  toEnum' 22 = Just MatchSubSport
+  toEnum' 23 = Just ExerciseSubSport
+  toEnum' 24 = Just ChallengeSubSport
+  toEnum' 25 = Just IndoorSkiingSubSport
+  toEnum' 26 = Just CardioTrainingSubSport
+  toEnum' 27 = Just IndoorWalkingSubSport
+  toEnum' 28 = Just EBikeFitnessSubSport
+  toEnum' 29 = Just BMXSubSport
+  toEnum' 30 = Just CasualWalkingSubSport
+  toEnum' 31 = Just SpeedWalkingSubSport
+  toEnum' 32 = Just BikeToRunTransitionSubSport
+  toEnum' 33 = Just RunToBikeTransitionSubSport
+  toEnum' 34 = Just SwimToBikeTransitionSubSport
+  toEnum' 35 = Just ATVSubSport
+  toEnum' 36 = Just MotocrossSubSport
+  toEnum' 37 = Just BackcountrySubSport
+  toEnum' 38 = Just ResortSubSport
+  toEnum' 39 = Just RCDroneSubSport
+  toEnum' 40 = Just WingsuitSubSport
+  toEnum' 41 = Just WhitewaterSubSport
+  toEnum' 254 = Just AllSubSports                 
+  toEnum' _ = Nothing
+  fromEnum' = undefined
+
 data SportEvent =
     UncategorizedSportEvent
   | Geocaching
@@ -564,6 +666,12 @@ data Activity =
   | AutoMultiSport
   deriving (Show, Enum, Bounded)
 
+instance Enum' Activity where
+    toEnum' 0 = Just Manual
+    toEnum' 1 = Just AutoMultiSport
+    toEnum' _ = Nothing
+    fromEnum' = undefined
+
 data Intensity =
     Active
   | Rest
@@ -571,12 +679,28 @@ data Intensity =
   | Cooldown
   deriving (Show, Enum, Bounded)
 
+instance Enum' Intensity where
+  toEnum' 0 = Just Active
+  toEnum' 1 = Just Rest
+  toEnum' 2 = Just Warmup
+  toEnum' 3 = Just Cooldown
+  toEnum' _ = Nothing
+  fromEnum' = undefined
+
 data SessionTrigger = 
     STActivityEnd
   | STManual
   | STAutoMultiSport
   | STFitnessEquipment
   deriving (Show, Enum, Bounded)
+
+instance Enum' SessionTrigger where
+    toEnum' 0 = Just STActivityEnd
+    toEnum' 1 = Just STManual
+    toEnum' 2 = Just STAutoMultiSport
+    toEnum' 3 = Just STFitnessEquipment
+    toEnum' _ = Nothing
+    fromEnum' = undefined
 
 data AutolapTrigger =
     ATTime
@@ -599,6 +723,19 @@ data LapTrigger =
   | LTSessionEnd
   | LTFitnessEquipment
   deriving (Show, Enum, Bounded)
+
+instance Enum' LapTrigger where
+  toEnum' 0 = Just LTManual
+  toEnum' 1 = Just LTTime
+  toEnum' 2 = Just LTDistance
+  toEnum' 3 = Just LTPositionStart
+  toEnum' 4 = Just LTPositionLap
+  toEnum' 5 = Just LTPositionWaypoint
+  toEnum' 6 = Just LTPositionMarked
+  toEnum' 7 = Just LTSessionEnd
+  toEnum' 8 = Just LTFitnessEquipment
+  toEnum' _ = Nothing
+  fromEnum' = undefined
 
 data Event =
     EventTimer
@@ -797,8 +934,8 @@ data CoursePoint =
   | Water
   | Food
   | Danger
-  | Left
-  | Right
+  | TurnLeft
+  | TurnRight
   | Straight
   | FirstAid
   | FourthCategory
@@ -1441,6 +1578,17 @@ data SwimStroke =
   | Im
   deriving (Show, Enum, Bounded)
 
+instance Enum' SwimStroke where
+  toEnum' 0 = Just Freestyle
+  toEnum' 1 = Just Backstroke
+  toEnum' 2 = Just Breaststroke
+  toEnum' 3 = Just Butterfly
+  toEnum' 4 = Just Drill
+  toEnum' 5 = Just Mixed
+  toEnum' 6 = Just Im
+  toEnum' _ = Nothing
+  fromEnum' = undefined
+
 data ActivityType =
     GenericActivity
   | RunningActivity
@@ -1452,22 +1600,17 @@ data ActivityType =
   | AllActivities
   deriving (Show)
 
-{-activityTypeMap :: M.Map Word8 ActivityType-}
-activityTypeMap = M.fromAscList
-  [
-    (0,   GenericActivity)
-  , (1,   RunningActivity)
-  , (2,   CyclingActivity)
-  , (3,   TransitionActivity)
-  , (4,   FitnessEquipmentActivity)
-  , (5,   SwimmingActivity)
-  , (6,   WalkingActivity)
-  , (254, AllActivities)
-  ]
-
 instance Enum' ActivityType where
-  toEnum' n = M.lookup n activityTypeMap
-  fromEnum' = undefined
+    toEnum' 0 = Just GenericActivity
+    toEnum' 1 = Just RunningActivity
+    toEnum' 2 = Just CyclingActivity
+    toEnum' 3 = Just TransitionActivity
+    toEnum' 4 = Just FitnessEquipmentActivity
+    toEnum' 5 = Just SwimmingActivity
+    toEnum' 6 = Just WalkingActivity
+    toEnum' 254 = Just AllActivities
+    toEnum' _ = Nothing
+    fromEnum' = undefined
 
 data ActivitySubtype =
     GenericSubactivity
@@ -1498,22 +1641,30 @@ data ActivityLevel =
   | High
   deriving (Show, Enum, Bounded)
 
-data LeftRightBalance =
-    LRBMask
-  | LRBRight
-  deriving (Show, Enum, Bounded)
+data LeftRightBalance = LRB !Balance !Word8
+  deriving (Show)
 
-instance Enum' LeftRightBalance where
-  toEnum' 0 = Just LRBMask
-  toEnum' 1 = Just LRBRight
-  toEnum' _ = Nothing
-  fromEnum' LRBMask  = 0
-  fromEnum' LRBRight = 1
+data Balance = Right | Unknown
+  deriving (Show)
 
-data LeftRightBalance100 =
-    LRBMask100
-  | LRBRight100
-  deriving (Show, Enum, Bounded)
+mkLRB :: Word8 -> LeftRightBalance
+mkLRB w = LRB balance contribution
+    where
+      contribution = w .&. 0x7F
+      balance = if w `testBit` 7
+                  then Right
+                  else Unknown
+
+data LeftRightBalance100 = LRB100 !Balance !Word16
+  deriving (Show)
+
+mkLRB100 :: Word16 -> LeftRightBalance100
+mkLRB100 w = LRB100 balance contribX100
+    where
+      contribX100 = w .&. 0x3FFF
+      balance = if w `testBit` 15
+                  then Right
+                  else Unknown
 
 data LengthType =
     IdleLength

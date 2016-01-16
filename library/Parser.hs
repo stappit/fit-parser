@@ -33,6 +33,7 @@ data ParseError = CRCFail           !CRC
                 | WrongMsgType
                 | InvalidBasetype   !BaseType
                 | InvalidFieldNum   !GlobalMsgNum !FieldNumber
+                | InvalidFieldNum'  !FieldNumber
                 | NoGlobalMsgFound  !GlobalMsgNum !FieldNumber
                 | NoTimestampFound
                 | TypeMismatch      !GlobalMsgNum !FieldNumber !BaseTypeValue
